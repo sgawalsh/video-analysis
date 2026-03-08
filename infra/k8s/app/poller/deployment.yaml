@@ -17,7 +17,7 @@ spec:
         - name: poller
           image: sgawalsh/postgres-notifications-worker:latest
           env:
-            - name: ROLE
+            - name: role
               value: poller
           envFrom:
             - configMapRef:
