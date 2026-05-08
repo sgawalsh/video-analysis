@@ -21,10 +21,10 @@ async function runMigrations(pool, { enableCron = false } = {}) {
       public_id UUID NOT NULL DEFAULT gen_random_uuid() UNIQUE,
       description TEXT NOT NULL,
       status job_status NOT NULL DEFAULT 'PENDING',
-      created_at TIMESTAMP DEFAULT NOW(),
-      updated_at TIMESTAMP DEFAULT NOW(),
-      started_at TIMESTAMP,
-      attempts INT DEFAULT 0,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ DEFAULT NOW(),
+      started_at TIMESTAMPTZ,
+      attempts INT NOT NULL DEFAULT 0,
       last_error TEXT
     )
   `);
