@@ -14,16 +14,34 @@ async function runMigrations(pool, { enableCron = false } = {}) {
     END$$;
   `);
 
+  // Create enum type for job type
+  await pool.query(`
+    DO $$
+    BEGIN
+      IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'job_type') THEN
+        CREATE TYPE job_type AS ENUM (
+          'SEMANTIC_SEARCH',
+          'TOPIC_DETECTION'
+        );
+      END IF;
+    END$$;
+  `);
+
   // Create jobs table
   await pool.query(`
     CREATE TABLE IF NOT EXISTS jobs (
       id SERIAL PRIMARY KEY,
       public_id UUID NOT NULL DEFAULT gen_random_uuid() UNIQUE,
-      description TEXT NOT NULL,
+      
       status job_status NOT NULL DEFAULT 'PENDING',
+      type job_type NOT NULL,
+      video_url TEXT NOT NULL,
+      payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+
       created_at TIMESTAMPTZ DEFAULT NOW(),
       updated_at TIMESTAMPTZ DEFAULT NOW(),
       started_at TIMESTAMPTZ,
+
       attempts INT NOT NULL DEFAULT 0,
       last_error TEXT
     )

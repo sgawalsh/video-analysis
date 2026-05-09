@@ -33,9 +33,10 @@ function JobStatus() {
 
   return (
     <div style={{ padding: 20 }}>
-      <h2>Job #{job.id}</h2>
       <p>Status: {job.status}</p>
-      <p>Description: {job.description}</p>
+      <p>Type: {job.type}</p>
+      <p>URL: {job.video_url}</p>
+      <p>Payload: {JSON.stringify(job.payload)}</p>
     </div>
   );
 }
