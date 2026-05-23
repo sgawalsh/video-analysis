@@ -44,8 +44,9 @@ func requeueStuckRunningJobs(ctx context.Context, db *sql.DB) ([]int, error) {
 	return jobIDs, nil
 }
 
-func (w *Worker) claimNextJob(ctx context.Context) (int, error) {
+func (w *Worker) claimNextJob(ctx context.Context) (int, string, error) {
 	var jobID int
+	var videoUrl string
 	err := w.db.QueryRowContext(ctx, `
 		UPDATE jobs
 		SET status = $1,
@@ -58,17 +59,17 @@ func (w *Worker) claimNextJob(ctx context.Context) (int, error) {
 			FOR UPDATE SKIP LOCKED
 			LIMIT 1
 		)
-		RETURNING id
-	`, StatusRunning, StatusPending).Scan(&jobID)
+		RETURNING id, video_url
+	`, StatusRunning, StatusPending).Scan(&jobID, &videoUrl)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return 0, sql.ErrNoRows
+			return 0, "", sql.ErrNoRows
 		}
-		return 0, err
+		return 0, "", err
 	}
 
-	return jobID, nil
+	return jobID, videoUrl, nil
 }
 
 func (w *Worker) handleJobFailure(ctx context.Context, jobID int, err error) {
