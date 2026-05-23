@@ -50,6 +50,13 @@ services:
     deploy:
       replicas: 2
 
+  model:
+    build: ./model
+    expose:
+      - "8001"
+    volumes:
+      - model-cache:/root/.cache/huggingface
+
   nginx:
     build:
       context: .
@@ -89,3 +96,4 @@ services:
 volumes:
   pgdata:
   grafana-data:
+  model-cache:
