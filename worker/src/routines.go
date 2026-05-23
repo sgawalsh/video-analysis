@@ -73,7 +73,7 @@ func (w *Worker) executeDBJobs(ctx context.Context) {
 
 			// Drain all available jobs
 			for {
-				jobID, err := w.claimNextJob(ctx)
+				jobID, videoUrl, err := w.claimNextJob(ctx)
 				if err != nil {
 					if err == sql.ErrNoRows {
 						break // no available work
@@ -82,9 +82,9 @@ func (w *Worker) executeDBJobs(ctx context.Context) {
 					break
 				}
 
-				log.Printf("Processing job %d", jobID)
+				log.Printf("Processing job %d with video URL: %s", jobID, videoUrl)
 
-				if err := doWork(); err != nil {
+				if err := queryTranscripts(ctx, videoUrl); err != nil {
 					w.handleJobFailure(ctx, jobID, err)
 					jobsFailed.Inc()
 					log.Printf("Job %d failed: %v", jobID, err)

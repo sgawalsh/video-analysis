@@ -19,6 +19,14 @@ RUN go build -o worker .
 
 # Stage 2: Minimal image
 FROM alpine:3@sha256:5b10f432ef3da1b8d4c7eb6c487f2f5a8f096bc91145e68878dd4a5019afde11
+
+# Install runtime dependencies
+RUN apk add --no-cache \
+    python3 \
+    py3-pip \
+    ffmpeg \
+    && pip install --break-system-packages yt-dlp
+
 RUN adduser -D worker
 
 COPY --from=builder /src/worker /worker

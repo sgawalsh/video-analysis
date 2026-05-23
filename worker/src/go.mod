@@ -3,12 +3,15 @@ module github.com/sgawalsh/job-processor/worker/src
 go 1.26
 
 require (
+	github.com/asticode/go-astisub v0.40.0
 	github.com/jackc/pgx/v5 v5.9.2
 	github.com/prometheus/client_golang v1.23.2
 	github.com/stretchr/testify v1.11.1
 )
 
 require (
+	github.com/asticode/go-astikit v0.20.0 // indirect
+	github.com/asticode/go-astits v1.8.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
@@ -23,6 +26,7 @@ require (
 	github.com/prometheus/procfs v0.16.1 // indirect
 	github.com/rogpeppe/go-internal v1.14.1 // indirect
 	go.yaml.in/yaml/v2 v2.4.2 // indirect
+	golang.org/x/net v0.43.0 // indirect
 	golang.org/x/sync v0.17.0 // indirect
 	golang.org/x/sys v0.40.0 // indirect
 	golang.org/x/text v0.30.0 // indirect
