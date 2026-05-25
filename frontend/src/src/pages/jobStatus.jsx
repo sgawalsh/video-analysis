@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 
 const TERMINAL_STATUSES = ['SUCCEEDED', 'FAILED'];
 
 function JobStatus() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [job, setJob] = useState(null);
 
   useEffect(() => {
@@ -17,6 +18,9 @@ function JobStatus() {
 
       if (TERMINAL_STATUSES.includes(data.status)) {
         clearInterval(intervalId);
+        if (data.status === 'SUCCEEDED') {
+          navigate(`/results/${data.type}/${data.public_id}`);
+        }
       }
     };
 
@@ -27,7 +31,7 @@ function JobStatus() {
     intervalId = setInterval(fetchJob, 2000);
 
     return () => clearInterval(intervalId);
-  }, [id]);
+  }, [id, navigate]);
 
   if (!job) return <p>Loading…</p>;
 
