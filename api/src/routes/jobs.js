@@ -1,6 +1,5 @@
 const express = require('express');
 const { jobFailures } = require('../metrics');
-const YOUTUBE_URL_REGEX = /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)[A-Za-z0-9_-]+/;
 
 function jobsRoutes({ pool }) {
     const router = express.Router();
@@ -23,12 +22,16 @@ function jobsRoutes({ pool }) {
             });
         }
 
+        
+
         // Shared validation
         if (!video_url) {
             return res.status(400).json({error: 'Video url is required',});
         }
 
-        if (!YOUTUBE_URL_REGEX.test(video_url)) {
+        const videoId = extractYoutubeVideoId(video_url);
+
+        if (!videoId) {
             return res.status(400).json({error: 'Please enter a valid YouTube URL',});
         }
 
@@ -57,7 +60,7 @@ function jobsRoutes({ pool }) {
                 `,
                 [
                     type,
-                    video_url,
+                    videoId,
                     req.body,
                 ]
             );
@@ -110,6 +113,40 @@ function jobsRoutes({ pool }) {
     });
 
     return router;
+}
+
+function extractYoutubeVideoId(input) {
+    try {
+        if (!/^https?:\/\//i.test(input)) {// add https protocol if not already present
+            input = `https://${input}`;
+        }
+        
+        const url = new URL(input);
+
+        // youtube.com/watch?v=...
+        if (
+            url.hostname === 'youtube.com' ||
+            url.hostname === 'www.youtube.com' ||
+            url.hostname === 'm.youtube.com'
+        ) {
+            const id = url.searchParams.get('v');
+            if (id) {
+                return id;
+            }
+        }
+
+        // youtu.be/...
+        if (
+            url.hostname === 'youtu.be' ||
+            url.hostname === 'www.youtu.be'
+        ) {
+            return url.pathname.slice(1);
+        }
+
+        return null;
+    } catch {
+        return null;
+    }
 }
 
 module.exports = jobsRoutes;

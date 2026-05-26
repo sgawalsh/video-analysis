@@ -13,10 +13,21 @@ import (
 	"github.com/asticode/go-astisub"
 )
 
+const (
+	chunkSize    = 100
+	chunkOverlap = 20
+)
+
 type chunk struct {
 	Text      []string
 	StartTime int64
 	EndTime   int64
+}
+
+type semanticMatch struct {
+	Distance  float32
+	Index     int64
+	StartTime int64
 }
 
 type wordIndexTime struct {
@@ -34,21 +45,84 @@ func formatTimestamp(ms int64) string {
 	return fmt.Sprintf("%02d:%02d:%02d", h, m, s)
 }
 
-func queryTranscripts(ctx context.Context, videoURL string) error {
+func (w *Worker) semanticSearch(ctx context.Context, jobId int, videoURL string, query string) error {
 
-	tempDir, err := os.MkdirTemp("", "subs-*")
-
+	tempDir, subFiles, err := getSubs(videoURL)
 	if err != nil {
 		return err
 	}
 
 	defer os.RemoveAll(tempDir)
 
+	myChunks, err := chunkSubtitles(subFiles[0])
+	if err != nil {
+		return err
+	}
+
+	for i := 0; i < len(myChunks); i++ {
+		myChunks[i] = formatText(myChunks[i])
+	}
+
+	distances, indices, err := searchChunksForQuery(myChunks, query)
+	if err != nil {
+		return err
+	}
+
+	semanticMatches, err := evaluateSearchResults(distances, indices, myChunks)
+	if err != nil {
+		return err
+	}
+
+	err = w.writeSemanticSearchResultToDb(ctx, jobId, semanticMatches)
+	return err
+}
+
+func evaluateSearchResults(distances []float32, indices []int64, chunks []chunk) ([]semanticMatch, error) {
+
+	const threshold float32 = 0.5
+
+	var semanticMatches []semanticMatch
+
+	// sanity check
+	if len(distances) != len(indices) {
+		return nil, fmt.Errorf("distances and indices length mismatch")
+	}
+
+	for i, distance := range distances {
+
+		// skip weak matches
+		if distance < threshold {
+			continue
+		}
+
+		chunkIndex := indices[i]
+
+		// FAISS can return -1 when no result is found
+		if chunkIndex < 0 || int(chunkIndex) >= len(chunks) {
+			continue
+		}
+
+		semanticMatches = append(semanticMatches, semanticMatch{
+			Distance:  distance,
+			Index:     chunkIndex,
+			StartTime: chunks[chunkIndex].StartTime / 1000, // convert ms to seconds
+		})
+	}
+
+	return semanticMatches, nil
+}
+
+func getSubs(videoURL string) (string, []string, error) {
+	tempDir, err := os.MkdirTemp("", "subs-*")
+
+	if err != nil {
+		return "", nil, err
+	}
+
 	outputTemplate := filepath.Join(
 		tempDir,
 		"%(id)s.%(ext)s",
 	)
-
 	cmd := exec.Command(
 		"yt-dlp",
 		"--write-auto-sub",
@@ -58,13 +132,10 @@ func queryTranscripts(ctx context.Context, videoURL string) error {
 		"--output", outputTemplate,
 		videoURL,
 	)
-
-	output, err := cmd.CombinedOutput()
-
-	fmt.Println(string(output))
+	_, err = cmd.CombinedOutput()
 
 	if err != nil {
-		return err
+		return "", nil, err
 	}
 
 	files, err := filepath.Glob(
@@ -72,32 +143,22 @@ func queryTranscripts(ctx context.Context, videoURL string) error {
 	)
 
 	if err != nil {
-		return err
+		return "", nil, err
 	}
 
 	if len(files) == 0 {
-		return fmt.Errorf("no transcript found")
+		return "", nil, fmt.Errorf("no transcript found")
 	}
 
-	// return logTranscript(files[0])
-	myChunks, err := chunkSubtitles(files[0])
-	if err != nil {
-		return err
-	}
-	for i, c := range myChunks {
-		fmt.Printf(
-			"Chunk %d: [%s - %s] %s\n",
-			i,
-			formatTimestamp(c.StartTime),
-			formatTimestamp(c.EndTime),
-			strings.Join(c.Text, " "),
-		)
-	}
-	return nil
+	return tempDir, files, nil
 }
 
-var chunkSize = 100
-var chunkOverlap = 20
+func formatText(c chunk) chunk { // remove isolated hyphens
+	c.Text = slices.DeleteFunc(c.Text, func(f string) bool {
+		return f == "-"
+	})
+	return c
+}
 
 func mergeWithOverlap(existing, incoming []string) []string {
 	maxOverlap := min(len(existing), len(incoming))
@@ -184,48 +245,17 @@ func getTimeStampFromWordIndex(indexTimes []wordIndexTime, wordIndex int) int64 
 	return 0
 }
 
-func logTranscript(path string) error {
+func searchChunksForQuery(chunks []chunk, query string) ([]float32, []int64, error) {
+	embedder := NewClient("http://model:8001")
+	var texts []string
+	for _, item := range chunks {
+		texts = append(texts, strings.Join(item.Text, " "))
+	}
 
-	file, err := os.Open(path)
-
+	distances, indices, err := embedder.embedAndSearch(context.Background(), texts, query)
 	if err != nil {
-		return err
+		return nil, nil, err
 	}
 
-	defer file.Close()
-
-	subs, err := astisub.ReadFromWebVTT(file)
-
-	if err != nil {
-		return err
-	}
-
-	subs.Unfragment()
-
-	// embedder := NewClient("http://model:8001")
-	// var texts []string
-	// for _, item := range subs.Items {
-	// 	texts = append(texts, item.String())
-	// }
-	// embeddings, err := embedder.Embed(context.Background(), texts)
-
-	// if err != nil {
-	// 	return err
-	// }
-
-	for _, item := range subs.Items {
-
-		fmt.Printf(
-			"[%v - %v] %s\n",
-			item.StartAt,
-			item.EndAt,
-			item.String(),
-		)
-	}
-
-	// for i, embedding := range embeddings {
-	// 	fmt.Printf("Embedding for subtitle %d: %v\n", i, embedding)
-	// }
-
-	return nil
+	return distances, indices, nil
 }

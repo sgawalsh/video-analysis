@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
+	"fmt"
 	"log"
 	"os"
 )
@@ -44,9 +46,14 @@ func requeueStuckRunningJobs(ctx context.Context, db *sql.DB) ([]int, error) {
 	return jobIDs, nil
 }
 
-func (w *Worker) claimNextJob(ctx context.Context) (int, string, error) {
-	var jobID int
-	var videoUrl string
+func (w *Worker) claimNextJob(ctx context.Context) (int, string, string, map[string]any, error) {
+	var (
+		jobID      int
+		videoUrl   string
+		jobType    string
+		payloadRaw []byte
+	)
+
 	err := w.db.QueryRowContext(ctx, `
 		UPDATE jobs
 		SET status = $1,
@@ -59,17 +66,26 @@ func (w *Worker) claimNextJob(ctx context.Context) (int, string, error) {
 			FOR UPDATE SKIP LOCKED
 			LIMIT 1
 		)
-		RETURNING id, video_url
-	`, StatusRunning, StatusPending).Scan(&jobID, &videoUrl)
+		RETURNING id, type, video_url, payload
+	`, StatusRunning, StatusPending).Scan(
+		&jobID,
+		&jobType,
+		&videoUrl,
+		&payloadRaw,
+	)
 
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return 0, "", sql.ErrNoRows
-		}
-		return 0, "", err
+		return 0, "", "", nil, err
 	}
 
-	return jobID, videoUrl, nil
+	var payloadMap map[string]any
+	if len(payloadRaw) > 0 {
+		if err := json.Unmarshal(payloadRaw, &payloadMap); err != nil {
+			return 0, "", "", nil, err
+		}
+	}
+
+	return jobID, jobType, videoUrl, payloadMap, nil
 }
 
 func (w *Worker) handleJobFailure(ctx context.Context, jobID int, err error) {
@@ -92,4 +108,24 @@ func (w *Worker) handleJobFailure(ctx context.Context, jobID int, err error) {
 	if err2 != nil {
 		log.Printf("Failed to update retry state for job %d: %v", jobID, err2)
 	}
+}
+
+func (w *Worker) writeSemanticSearchResultToDb(ctx context.Context, jobID int, semanticMatches []semanticMatch) error {
+
+	resultJSON, err := json.Marshal(semanticMatches)
+	if err != nil {
+		return fmt.Errorf("Failed to marshal semantic search result: %w", err)
+	}
+
+	_, err = w.db.ExecContext(ctx, `
+        UPDATE jobs
+		SET result = $2
+		WHERE id = $1
+    `, jobID, resultJSON)
+
+	if err != nil {
+		return fmt.Errorf("Failed to update semantic search result for job %d: %v", jobID, err)
+	}
+
+	return nil
 }

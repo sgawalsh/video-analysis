@@ -64,7 +64,7 @@ func TestClaimJob(t *testing.T) {
 	w, err := NewWorker()
 	require.NoError(t, err)
 
-	id, _, err := w.claimNextJob(ctx)
+	id, _, _, _, err := w.claimNextJob(ctx)
 	require.NoError(t, err)
 
 	require.Equal(t, 1, id)

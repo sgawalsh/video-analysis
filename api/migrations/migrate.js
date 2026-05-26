@@ -37,6 +37,7 @@ async function runMigrations(pool, { enableCron = false } = {}) {
       type job_type NOT NULL,
       video_url TEXT NOT NULL,
       payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+      result JSONB NOT NULL DEFAULT '{}'::jsonb,
 
       created_at TIMESTAMPTZ DEFAULT NOW(),
       updated_at TIMESTAMPTZ DEFAULT NOW(),
