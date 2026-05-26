@@ -11,10 +11,12 @@ import (
 
 type EmbedRequest struct {
 	Texts []string `json:"texts"`
+	Query string   `json:"query"`
 }
 
 type EmbedResponse struct {
-	Embeddings [][]float32 `json:"embeddings"`
+	Distances []float32 `json:"distances"`
+	Indices   []int64   `json:"indices"`
 }
 
 type Client struct {
@@ -31,41 +33,41 @@ func NewClient(baseURL string) *Client {
 	}
 }
 
-func (c *Client) Embed(ctx context.Context, texts []string) ([][]float32, error) {
+func (c *Client) embedAndSearch(ctx context.Context, texts []string, query string) ([]float32, []int64, error) {
 
-	reqBody := EmbedRequest{Texts: texts}
+	reqBody := EmbedRequest{Texts: texts, Query: query}
 
 	b, err := json.Marshal(reqBody)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	req, err := http.NewRequestWithContext(
 		ctx,
 		"POST",
-		fmt.Sprintf("%s/embed", c.BaseURL),
+		fmt.Sprintf("%s/embedAndSearch", c.BaseURL),
 		bytes.NewBuffer(b),
 	)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := c.Client.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("bad status: %d", resp.StatusCode)
+		return nil, nil, fmt.Errorf("bad status: %d", resp.StatusCode)
 	}
 
 	var out EmbedResponse
 	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return out.Embeddings, nil
+	return out.Distances, out.Indices, nil
 }
