@@ -54,6 +54,33 @@ async function runMigrations(pool, { enableCron = false } = {}) {
     ON jobs(status)
     WHERE status = 'PENDING';
   `);
+
+  // Create trigger function for automatic update_at timestamp
+  await pool.query(`
+    CREATE OR REPLACE FUNCTION set_updated_at()
+    RETURNS TRIGGER AS $$
+    BEGIN
+      NEW.updated_at = NOW();
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql;;
+  `);
+
+  // Create trigger function for automatic update_at timestamp
+  await pool.query(`
+    DO $$
+    BEGIN
+      IF NOT EXISTS (
+        SELECT 1 FROM pg_trigger WHERE tgname = 'jobs_set_updated_at'
+      ) THEN
+        CREATE TRIGGER jobs_set_updated_at
+        BEFORE UPDATE ON jobs
+        FOR EACH ROW
+        EXECUTE FUNCTION set_updated_at();
+      END IF;
+    END
+    $$;
+  `);
   
   // Create trigger function to notify when new pending jobs are available
   await pool.query(`
