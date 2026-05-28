@@ -35,14 +35,40 @@ type wordIndexTime struct {
 	timeStamp int64
 }
 
-func formatTimestamp(ms int64) string {
-	d := time.Duration(ms) * time.Millisecond
+func (w *Worker) channelSearch(ctx context.Context, jobId int, channelID string) error {
+	//get dates, search for videos in channel within date range, create new jobs of session type for each video found
+	var (
+		startDate time.Time
+		endDate   time.Time
+	)
 
-	h := int(d.Hours())
-	m := int(d.Minutes()) % 60
-	s := int(d.Seconds()) % 60
+	err := w.db.QueryRowContext(ctx, `
+		select startDate, endDate
+		from jobs
+		where id = $1
+	`, jobId).Scan(&startDate, &endDate)
+	if err != nil {
+		return fmt.Errorf("load date range: %w", err)
+	}
 
-	return fmt.Sprintf("%02d:%02d:%02d", h, m, s)
+	cmd := exec.CommandContext(
+		ctx,
+		"yt-dlp",
+		"--flat-playlist",
+		"--dump-json",
+		"--dateafter", startDate.Format("20060102"),
+		"--datebefore", endDate.Format("20060102"),
+		fmt.Sprintf("https://www.youtube.com/%s/videos", channelID),
+	)
+
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("yt-dlp output: %s\n", string(output))
+
+	return nil
 }
 
 func (w *Worker) semanticSearch(ctx context.Context, jobId int, videoURL string, query string) error {
@@ -243,6 +269,16 @@ func getTimeStampFromWordIndex(indexTimes []wordIndexTime, wordIndex int) int64 
 		}
 	}
 	return 0
+}
+
+func formatTimestamp(ms int64) string {
+	d := time.Duration(ms) * time.Millisecond
+
+	h := int(d.Hours())
+	m := int(d.Minutes()) % 60
+	s := int(d.Seconds()) % 60
+
+	return fmt.Sprintf("%02d:%02d:%02d", h, m, s)
 }
 
 func searchChunksForQuery(chunks []chunk, query string) ([]float32, []int64, error) {

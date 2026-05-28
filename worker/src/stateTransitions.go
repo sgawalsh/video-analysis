@@ -46,12 +46,12 @@ func requeueStuckRunningJobs(ctx context.Context, db *sql.DB) ([]int, error) {
 	return jobIDs, nil
 }
 
-func (w *Worker) claimNextJob(ctx context.Context) (int, string, string, map[string]any, error) {
+func (w *Worker) claimNextJob(ctx context.Context) (int, string, string, string, error) {
 	var (
-		jobID      int
-		videoUrl   string
-		jobType    string
-		payloadRaw []byte
+		jobID    int
+		jobType  string
+		targetID string
+		query    string
 	)
 
 	err := w.db.QueryRowContext(ctx, `
@@ -66,26 +66,19 @@ func (w *Worker) claimNextJob(ctx context.Context) (int, string, string, map[str
 			FOR UPDATE SKIP LOCKED
 			LIMIT 1
 		)
-		RETURNING id, type, video_url, payload
+		RETURNING id, type, target_id, query
 	`, StatusRunning, StatusPending).Scan(
 		&jobID,
 		&jobType,
-		&videoUrl,
-		&payloadRaw,
+		&targetID,
+		&query,
 	)
 
 	if err != nil {
-		return 0, "", "", nil, err
+		return 0, "", "", "", err
 	}
 
-	var payloadMap map[string]any
-	if len(payloadRaw) > 0 {
-		if err := json.Unmarshal(payloadRaw, &payloadMap); err != nil {
-			return 0, "", "", nil, err
-		}
-	}
-
-	return jobID, jobType, videoUrl, payloadMap, nil
+	return jobID, jobType, targetID, query, nil
 }
 
 func (w *Worker) handleJobFailure(ctx context.Context, jobID int, err error) {

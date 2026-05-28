@@ -1,12 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 
-const TERMINAL_STATUSES = ['SUCCEEDED', 'FAILED'];
-
 function JobStatus() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [job, setJob] = useState(null);
+  const [counts, setCounts] = useState(null);
 
   useEffect(() => {
     let intervalId;
@@ -14,13 +12,10 @@ function JobStatus() {
     const fetchJob = async () => {
       const res = await fetch(`/api/jobs/${id}`, { cache: 'no-store' });
       const data = await res.json();
-      setJob(data);
+      setCounts(data);
 
-      if (TERMINAL_STATUSES.includes(data.status)) {
+      if (Number(data.succeeded) + Number(data.failed) === Number(data.total)) {
         clearInterval(intervalId);
-        if (data.status === 'SUCCEEDED') {
-          navigate(`/results/${data.type}/${data.public_id}`);
-        }
       }
     };
 
@@ -31,16 +26,18 @@ function JobStatus() {
     intervalId = setInterval(fetchJob, 2000);
 
     return () => clearInterval(intervalId);
-  }, [id, navigate]);
+  }, [id]);
 
-  if (!job) return <p>Loading…</p>;
+  if (!counts) return <p>Loading…</p>;
 
   return (
     <div style={{ padding: 20 }}>
-      <p>Status: {job.status}</p>
-      <p>Type: {job.type}</p>
-      <p>URL: {job.video_url}</p>
-      <p>Payload: {JSON.stringify(job.payload)}</p>
+      <h2>Job Status</h2>
+      <p>Total Jobs: {counts.total}</p>
+      <p>Succeeded: {counts.succeeded}</p>
+      <p>Failed: {counts.failed}</p>
+      <p>Pending: {counts.pending}</p>
+      <p>Running: {counts.running}</p>
     </div>
   );
 }

@@ -73,7 +73,7 @@ func (w *Worker) executeDBJobs(ctx context.Context) {
 
 			// Drain all available jobs
 			for {
-				jobID, jobType, videoUrl, payload, err := w.claimNextJob(ctx)
+				jobID, jobType, targetID, query, err := w.claimNextJob(ctx)
 				if err != nil {
 					if err == sql.ErrNoRows {
 						break // no available work
@@ -82,13 +82,15 @@ func (w *Worker) executeDBJobs(ctx context.Context) {
 					break
 				}
 
-				if jobType == "SEMANTIC_SEARCH" {
-					var query string = payload["search_term"].(string)
-
-					if err := w.semanticSearch(ctx, jobID, videoUrl, query); err != nil {
-						w.handleJobFailure(ctx, jobID, err)
-						jobsFailed.Inc()
-						log.Printf("Job %d failed: %v", jobID, err)
+				switch jobType {
+				case "CHANNEL_SEARCH":
+					if err := w.channelSearch(ctx, jobID, targetID); err != nil {
+						w.failJob(ctx, jobID, err)
+						continue
+					}
+				case "SEMANTIC_SEARCH":
+					if err := w.semanticSearch(ctx, jobID, targetID, query); err != nil {
+						w.failJob(ctx, jobID, err)
 						continue
 					}
 				}
@@ -133,4 +135,10 @@ func (w *Worker) pollPendingJobs(ctx context.Context) {
 			}
 		}
 	}
+}
+
+func (w *Worker) failJob(ctx context.Context, jobID int, err error) {
+	w.handleJobFailure(ctx, jobID, err)
+	jobsFailed.Inc()
+	log.Printf("Job %d failed: %v", jobID, err)
 }

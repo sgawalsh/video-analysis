@@ -12,7 +12,7 @@ function resultRoutes({ pool }) {
                 `
                 SELECT
                 result,
-                video_url
+                target_id
                 FROM jobs
                 WHERE public_id = $1
                 `,
