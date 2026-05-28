@@ -3,8 +3,8 @@ import { http, HttpResponse } from 'msw';
 let jobs: any[] = [];
 
 export const handlers = [
-  // Create job
-  http.post('/api/jobs', async ({ request }) => {
+  // Create session
+  http.post('/api/sessions', async ({ request }) => {
     const body = await request.json() as any;
 
     if (!body.description) {
@@ -25,8 +25,8 @@ export const handlers = [
     return HttpResponse.json(job, { status: 201 });
   }),
 
-  // Fetch job status
-  http.get('/api/jobs/:id', ({ params }) => {
+  // Fetch sessionstatus
+  http.get('/api/sessions/:id', ({ params }) => {
     return HttpResponse.json({
       id: Number(params.id),
       description: 'My test job',

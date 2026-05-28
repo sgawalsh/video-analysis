@@ -104,6 +104,8 @@ func (w *Worker) executeDBJobs(ctx context.Context) {
 					continue
 				}
 
+				log.Printf("Job %d completed successfully", jobID)
+
 				jobsProcessed.Inc()
 			}
 		}

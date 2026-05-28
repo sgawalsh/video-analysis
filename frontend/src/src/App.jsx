@@ -8,7 +8,7 @@ function App() {
   return (
     <Routes>
       <Route path="/" element={<JobForm />} />
-      <Route path="/jobs/:id" element={<SessionStatus />} />
+      <Route path="/sessions/:id" element={<SessionStatus />} />
       <Route path="/results/:type/:id" element={<ResultRouter />} />
       <Route path="*" element={<NotFound />} />
     </Routes>

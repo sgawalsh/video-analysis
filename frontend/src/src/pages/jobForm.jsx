@@ -74,7 +74,7 @@ function JobForm() {
         requestBody.searchTerm = searchTerm;
       }
 
-      const res = await fetch('/api/jobs', {
+      const res = await fetch('/api/sessions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestBody),
@@ -86,7 +86,7 @@ function JobForm() {
       }
 
       const data = await res.json();
-      navigate(`/jobs/${data.public_id}`);
+      navigate(`/sessions/${data.public_id}`);
     } catch (err) {
       setError(err.message);
       setLoading(false);

@@ -44,7 +44,8 @@ async function runMigrations(pool, { enableCron = false } = {}) {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS jobs (
       id SERIAL PRIMARY KEY,
-      session_id INT REFERENCES sessions(id) ON DELETE CASCADE,
+      session_id INT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
+      session_public_id UUID NOT NULL,
       
       type job_type NOT NULL,
       status job_status NOT NULL DEFAULT 'PENDING',
@@ -71,18 +72,68 @@ async function runMigrations(pool, { enableCron = false } = {}) {
     WHERE status = 'PENDING';
   `);
 
-  // Create trigger function for automatic update_at timestamp
+   // Fires re-count triggers and completed notifications
   await pool.query(`
-    CREATE OR REPLACE FUNCTION set_updated_at()
+    CREATE OR REPLACE FUNCTION sse_notifications()
+    RETURNS TRIGGER AS $$
+    BEGIN
+      IF OLD.status IS DISTINCT FROM NEW.status AND NEW.type != 'CHANNEL_SEARCH' THEN
+
+        PERFORM pg_notify(
+          'session_events',
+          json_build_object(
+            'session_public_id', NEW.session_public_id,
+            'n_type', 'status_changed'
+          )::text
+        );
+
+        IF NEW.status = 'SUCCEEDED' THEN
+          PERFORM pg_notify(
+            'session_events',
+            json_build_object(
+              'session_public_id', NEW.session_public_id,
+              'n_type', 'job_completed',
+              'target_id', NEW.target_id,
+              'result', NEW.result
+            )::text
+          );
+        END IF;
+
+      END IF;
+
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql;
+  `);
+
+  // Create trigger function for sse notifications
+  await pool.query(`
+    DO $$
+    BEGIN
+      IF NOT EXISTS (
+        SELECT 1 FROM pg_trigger WHERE tgname = 'sse_notifications_trigger'
+      ) THEN
+        CREATE TRIGGER sse_notifications_trigger
+        AFTER UPDATE ON jobs
+        FOR EACH ROW
+        EXECUTE FUNCTION sse_notifications();
+      END IF;
+    END
+    $$;
+  `);
+
+  //sets updated_at timestamp on update
+  await pool.query(`
+    CREATE OR REPLACE FUNCTION auto_updated_at()
     RETURNS TRIGGER AS $$
     BEGIN
       NEW.updated_at = NOW();
       RETURN NEW;
     END;
-    $$ LANGUAGE plpgsql;;
+    $$ LANGUAGE plpgsql;
   `);
 
-  // Create trigger function for automatic update_at timestamp
+  // Create trigger function for automatic updated_at timestamp
   await pool.query(`
     DO $$
     BEGIN
@@ -92,7 +143,7 @@ async function runMigrations(pool, { enableCron = false } = {}) {
         CREATE TRIGGER jobs_set_updated_at
         BEFORE UPDATE ON jobs
         FOR EACH ROW
-        EXECUTE FUNCTION set_updated_at();
+        EXECUTE FUNCTION auto_updated_at();
       END IF;
     END
     $$;

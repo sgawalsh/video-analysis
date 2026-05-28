@@ -43,9 +43,9 @@ func (w *Worker) channelSearch(ctx context.Context, jobId int, channelID string)
 	)
 
 	err := w.db.QueryRowContext(ctx, `
-		select startDate, endDate
-		from jobs
-		where id = $1
+		SELECT startDate, endDate
+		FROM jobs
+		WHERE id = $1
 	`, jobId).Scan(&startDate, &endDate)
 	if err != nil {
 		return fmt.Errorf("load date range: %w", err)
