@@ -1,13 +1,14 @@
 const express = require('express');
 const { jobFailures } = require('../metrics');
+const getSessionJobCounts = require('../sessionsRepository');
 
 function sessionRoutes({ pool, hub }) {
     const router = express.Router();
     
-    const VALID_JOB_TYPES = [
+    const VALID_JOB_TYPES = Object.freeze([
     'SEMANTIC_SEARCH',
     'TOPIC_DETECTION',
-    ];
+    ]);
 
     router.post('/', async (req, res) => {
         const {
@@ -95,24 +96,6 @@ function sessionRoutes({ pool, hub }) {
     return router;
 }
 
-async function getSessionJobCounts(pool, public_id){
-    const result = await pool.query(
-        `
-        SELECT
-            COUNT(*) FILTER (WHERE status = 'SUCCEEDED') AS succeeded,
-            COUNT(*) FILTER (WHERE status = 'FAILED') AS failed,
-            COUNT(*) FILTER (WHERE status = 'PENDING') AS pending,
-            COUNT(*) FILTER (WHERE status = 'RUNNING') AS running,
-            COUNT(*) AS total
-        FROM jobs
-        WHERE session_public_id = $1
-        `,
-        [public_id]
-    );
-
-    return result.rows[0];
-}
-
 async function getSessionType(pool, public_id){
     const result = await pool.query(
         `
@@ -198,6 +181,8 @@ async function channelSearchFlow(res, pool, type, channelName, searchTerm, start
     try {
         await client.query('BEGIN');
 
+        console.log('going with type', type, 'channelName', channelName, 'searchTerm', searchTerm, 'startDate', startDate, 'endDate', endDate);
+
         const sessionResult = await client.query(
             `
             INSERT INTO sessions (type, query)
@@ -207,7 +192,9 @@ async function channelSearchFlow(res, pool, type, channelName, searchTerm, start
             [type, searchTerm]
         );
 
-        const { id, public_id: publicID } = sessionResult.rows[0];
+        const { id, public_id } = sessionResult.rows[0];
+
+        console.log('got s_id ', public_id, ' - id ', id);
 
         await client.query(
             `
@@ -221,12 +208,12 @@ async function channelSearchFlow(res, pool, type, channelName, searchTerm, start
             )
             VALUES ($1, $2, $3 ,$4, $5, $6)
             `,
-            [id, publicID, type, channelName, startDate, endDate]
+            [id, public_id, "CHANNEL_SEARCH", channelName, startDate, endDate]
         );
 
         await client.query('COMMIT');
 
-        res.status(201).json({ publicID });
+        res.status(201).json({ public_id });
 
     } catch (err) {
         await client.query('ROLLBACK');

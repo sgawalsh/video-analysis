@@ -1,3 +1,4 @@
+const getSessionJobCounts = require('./sessionsRepository');
 async function createPgListener({ pool, hub }) {
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -64,24 +65,6 @@ async function createPgListener({ pool, hub }) {
     console.log("PG listener restarting in 2s...");
     await sleep(2000);
   }
-}
-
-async function getSessionJobCounts(pool, public_id){
-    const result = await pool.query(
-        `
-        SELECT
-            COUNT(*) FILTER (WHERE status = 'SUCCEEDED') AS succeeded,
-            COUNT(*) FILTER (WHERE status = 'FAILED') AS failed,
-            COUNT(*) FILTER (WHERE status = 'PENDING') AS pending,
-            COUNT(*) FILTER (WHERE status = 'RUNNING') AS running,
-            COUNT(*) AS total
-        FROM jobs
-        WHERE session_public_id = $1
-        `,
-        [public_id]
-    );
-
-    return result.rows[0];
 }
 
 module.exports = createPgListener;
