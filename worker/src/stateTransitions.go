@@ -7,10 +7,20 @@ import (
 	"fmt"
 	"log"
 	"os"
+
+	"github.com/lib/pq"
 )
 
 var maxAttempts = os.Getenv("worker_max_job_retries")
 var runningTimeout = os.Getenv("worker_running_timeout")
+
+type JobType string
+
+const (
+	jobTypeChannelSearch  JobType = "CHANNEL_SEARCH"
+	jobTypeSemanticSearch JobType = "SEMANTIC_SEARCH"
+	jobTypeTopicDetection JobType = "TOPIC_DETECTION"
+)
 
 // Requeue stuck RUNNING jobs that have exceeded the time limit
 func requeueStuckRunningJobs(ctx context.Context, db *sql.DB) ([]int, error) {
@@ -51,7 +61,7 @@ func (w *Worker) claimNextJob(ctx context.Context) (int, string, string, string,
 		jobID    int
 		jobType  string
 		targetID string
-		query    string
+		query    sql.NullString
 	)
 
 	err := w.db.QueryRowContext(ctx, `
@@ -78,7 +88,7 @@ func (w *Worker) claimNextJob(ctx context.Context) (int, string, string, string,
 		return 0, "", "", "", err
 	}
 
-	return jobID, jobType, targetID, query, nil
+	return jobID, jobType, targetID, query.String, nil
 }
 
 func (w *Worker) handleJobFailure(ctx context.Context, jobID int, err error) {
@@ -121,4 +131,31 @@ func (w *Worker) writeSemanticSearchResultToDb(ctx context.Context, jobID int, s
 	}
 
 	return nil
+}
+
+func (w *Worker) insertBatch(ctx context.Context, sessionID int, publicID string, jobType JobType, query string, videoIDs []string) (int, error) {
+	if len(videoIDs) == 0 {
+		return 0, nil
+	}
+
+	res, err := w.db.ExecContext(
+		ctx,
+		`
+        INSERT INTO jobs (session_id, session_public_id, type, target_id, query )
+        SELECT $1, $2, $3::job_type, unnest($4::text[]), $5
+        ON CONFLICT (session_id, target_id) DO NOTHING
+        `,
+		sessionID, publicID, jobType, pq.Array(videoIDs), query,
+	)
+
+	if err != nil {
+		return 0, err
+	}
+
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return 0, fmt.Errorf("failed to fetch rows affected: %w", err)
+	}
+
+	return int(rows), nil
 }
