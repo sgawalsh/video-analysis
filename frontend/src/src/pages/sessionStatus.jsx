@@ -46,15 +46,26 @@ function SessionStatus() {
         es.addEventListener('job_completed', (e) => {
           const event = JSON.parse(e.data);
           console.log('job_completed fired');
+
           setSessionState((prev) => {
             if (!prev) return prev;
 
+            const targetId = event.target_id;
+
+            const incoming = (event.result ?? []).map(item => ({
+              ...item,
+              target_id: targetId,
+            }));
+
             return {
               ...prev,
-              // Safe immutable array append
-              results: prev.results 
-                ? [...prev.results, ...event.result] 
-                : [...event.result]
+              results: {
+                ...(prev.results || {}),
+                [targetId]: [
+                  ...((prev.results || {})[targetId] || []),
+                  ...incoming
+                ]
+              }
             };
           });
         });

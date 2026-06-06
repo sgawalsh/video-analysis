@@ -1,9 +1,19 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+
+const getLocalDateString = () => {
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
+  const dd = String(today.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+};
 
 function JobForm() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+
+  const maxAvailableDate = useMemo(() => getLocalDateString(), []);
 
   // Grouped State Object
   const [formData, setFormData] = useState({
@@ -173,7 +183,7 @@ function JobForm() {
                   name="startDate"
                   value={formData.startDate}
                   onChange={handleChange}
-                  max={formData.endDate}
+                  max={formData.endDate ? formData.endDate : maxAvailableDate}
                   required
                   style={{ width: 195 }} 
                 />
@@ -183,6 +193,7 @@ function JobForm() {
                   value={formData.endDate}
                   onChange={handleChange}
                   min={formData.startDate}
+                  max={maxAvailableDate} // Prevent future dates
                   required
                   style={{ width: 195 }}
                 />

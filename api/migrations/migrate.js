@@ -49,7 +49,7 @@ async function runMigrations(pool, { enableCron = false } = {}) {
       
       type job_type NOT NULL,
       status job_status NOT NULL DEFAULT 'PENDING',
-      target_id TEXT,
+      target_id TEXT NOT NULL,
       query TEXT,
       result JSONB NOT NULL DEFAULT '{}'::jsonb,
 
@@ -70,6 +70,12 @@ async function runMigrations(pool, { enableCron = false } = {}) {
     CREATE INDEX IF NOT EXISTS idx_jobs_status_pending
     ON jobs(status)
     WHERE status = 'PENDING';
+  `);
+
+  //create unique index to prevent duplicate jobs for same session and target
+  await pool.query(`
+    CREATE UNIQUE INDEX jobs_session_type_target_unique
+    ON jobs (session_id, target_id);
   `);
 
    // Fires re-count triggers and completed notifications
