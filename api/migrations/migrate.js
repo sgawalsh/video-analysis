@@ -8,7 +8,9 @@ async function runMigrations(pool, { enableCron = false } = {}) {
         CREATE TYPE job_type AS ENUM (
           'CHANNEL_SEARCH',
           'SEMANTIC_SEARCH',
-          'TOPIC_DETECTION'
+          'TOPIC_DETECTION',
+          'KEYWORD_SEARCH',
+          'VIDEO_SUMMARIZATION'
         );
       END IF;
     END$$;
@@ -51,7 +53,7 @@ async function runMigrations(pool, { enableCron = false } = {}) {
       status job_status NOT NULL DEFAULT 'PENDING',
       target_id TEXT NOT NULL,
       query TEXT,
-      result JSONB NOT NULL DEFAULT '{}'::jsonb,
+      result JSONB NOT NULL DEFAULT '[]'::jsonb,
 
       created_at TIMESTAMPTZ DEFAULT NOW(),
       updated_at TIMESTAMPTZ DEFAULT NOW(),

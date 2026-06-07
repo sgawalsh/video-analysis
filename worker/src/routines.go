@@ -93,6 +93,25 @@ func (w *Worker) executeDBJobs(ctx context.Context) {
 						w.failJob(ctx, jobID, err)
 						continue
 					}
+				case "TOPIC_DETECTION":
+					if err := w.topicDetection(ctx, jobID, targetID); err != nil {
+						w.failJob(ctx, jobID, err)
+						continue
+					}
+				case "KEYWORD_SEARCH":
+					if err := w.keywordSearch(ctx, jobID, targetID, query); err != nil {
+						w.failJob(ctx, jobID, err)
+						continue
+					}
+				case "VIDEO_SUMMARIZATION":
+					if err := w.videoSummarization(ctx, jobID, targetID); err != nil {
+						w.failJob(ctx, jobID, err)
+						continue
+					}
+				default:
+					log.Printf("Unknown job type %s for job %d", jobType, jobID)
+					w.failJob(ctx, jobID, errors.New("Unknown job type"))
+					continue
 				}
 
 				if _, err := w.db.ExecContext(ctx, `

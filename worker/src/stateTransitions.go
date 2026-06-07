@@ -17,9 +17,11 @@ var runningTimeout = os.Getenv("worker_running_timeout")
 type JobType string
 
 const (
-	jobTypeChannelSearch  JobType = "CHANNEL_SEARCH"
-	jobTypeSemanticSearch JobType = "SEMANTIC_SEARCH"
-	jobTypeTopicDetection JobType = "TOPIC_DETECTION"
+	jobTypeChannelSearch      JobType = "CHANNEL_SEARCH"
+	jobTypeSemanticSearch     JobType = "SEMANTIC_SEARCH"
+	jobTypeTopicDetection     JobType = "TOPIC_DETECTION"
+	jobTypeKeywordSearch      JobType = "KEYWORD_SEARCH"
+	jobTypeVideoSummarization JobType = "VIDEO_SUMMARIZATION"
 )
 
 // Requeue stuck RUNNING jobs that have exceeded the time limit

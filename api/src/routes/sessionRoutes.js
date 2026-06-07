@@ -8,6 +8,8 @@ function sessionRoutes({ pool, hub }) {
     const VALID_JOB_TYPES = Object.freeze([
     'SEMANTIC_SEARCH',
     'TOPIC_DETECTION',
+    'KEYWORD_SEARCH',
+    'VIDEO_SUMMARIZATION'
     ]);
 
     router.post('/', async (req, res) => {
@@ -26,7 +28,7 @@ function sessionRoutes({ pool, hub }) {
             return res.status(400).json({error: 'Invalid job type: ' + type,});
         }
         // Semantic search validation
-        if (type === 'SEMANTIC_SEARCH' && !searchTerm) {
+        if (['SEMANTIC_SEARCH', 'KEYWORD_SEARCH'].includes(type) && !searchTerm) {
             return res.status(400).json({error: 'Search term is required',});
         }
 

@@ -80,7 +80,7 @@ function JobForm() {
         requestBody.endDate = endDate;
       }
 
-      if (jobType === 'SEMANTIC_SEARCH') {
+      if (['SEMANTIC_SEARCH', 'KEYWORD_SEARCH'].includes(jobType)) {
         requestBody.searchTerm = searchTerm;
       }
 
@@ -144,7 +144,9 @@ function JobForm() {
                 style={{ marginLeft: 10 }}
               >
                 <option value="SEMANTIC_SEARCH">Semantic Search</option>
+                <option value="KEYWORD_SEARCH">Keyword Search</option>
                 <option value="TOPIC_DETECTION">Topic Detection</option>
+                <option value="VIDEO_SUMMARIZATION">Video Summarization</option>
               </select>
             </label>
           </div>
@@ -202,7 +204,7 @@ function JobForm() {
           )}
 
           {/* Conditional Field */}
-          {formData.jobType === 'SEMANTIC_SEARCH' && (
+          {['SEMANTIC_SEARCH', 'KEYWORD_SEARCH'].includes(formData.jobType) && (
             <div style={{ marginBottom: 12 }}>
               <input
                 name="searchTerm"
