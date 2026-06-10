@@ -82,6 +82,8 @@ func (w *Worker) executeDBJobs(ctx context.Context) {
 					break
 				}
 
+				log.Printf("Claimed job %d of type %s", jobID, jobType)
+
 				switch jobType {
 				case "CHANNEL_SEARCH":
 					if err := w.channelSearch(ctx, jobID, targetID); err != nil {
