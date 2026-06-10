@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -115,21 +114,16 @@ func (w *Worker) handleJobFailure(ctx context.Context, jobID int, err error) {
 	}
 }
 
-func (w *Worker) writeSemanticSearchResultToDb(ctx context.Context, jobID int, semanticMatches []semanticMatch) error {
+func (w *Worker) writeResultToDb(ctx context.Context, jobID int, resultJSON []byte) error {
 
-	resultJSON, err := json.Marshal(semanticMatches)
-	if err != nil {
-		return fmt.Errorf("Failed to marshal semantic search result: %w", err)
-	}
-
-	_, err = w.db.ExecContext(ctx, `
+	_, err := w.db.ExecContext(ctx, `
         UPDATE jobs
 		SET result = $2
 		WHERE id = $1
     `, jobID, resultJSON)
 
 	if err != nil {
-		return fmt.Errorf("Failed to update semantic search result for job %d: %v", jobID, err)
+		return fmt.Errorf("Failed to update result for job %d: %v", jobID, err)
 	}
 
 	return nil

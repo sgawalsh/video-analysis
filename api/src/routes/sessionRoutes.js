@@ -146,7 +146,7 @@ async function singleVideoFlow(res, pool, type, videoURL, searchTerm) {
             )
             VALUES ($1, $2, $3, $4, $5)
             `,
-            [id, public_id, type, videoID, searchTerm]
+            [id, public_id, type, videoID, searchTerm ? searchTerm.toLowerCase() : null]
         );
 
         await client.query('COMMIT');
@@ -191,7 +191,7 @@ async function channelSearchFlow(res, pool, type, channelName, searchTerm, start
             VALUES ($1, $2)
             RETURNING id, public_id
             `,
-            [type, searchTerm]
+            [type, searchTerm ? searchTerm.toLowerCase() : null]
         );
 
         const { id, public_id } = sessionResult.rows[0];
