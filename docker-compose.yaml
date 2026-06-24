@@ -47,8 +47,8 @@ services:
     environment:
       role: worker
       worker_concurrency: "${worker_concurrency:-1}"
-    deploy:
-      replicas: 2
+    # deploy:
+      # replicas: 2
 
   model:
     build: ./model
@@ -56,6 +56,16 @@ services:
       - "8001"
     volumes:
       - model-cache:/root/.cache/huggingface
+
+  ollama:
+    build: ./ollama
+    container_name: ollama_cpu
+    expose:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    cpus: "4.0" # Restrict CPU resources so website stays responsive
+    mem_limit: 4g
 
   nginx:
     build:
@@ -97,3 +107,4 @@ volumes:
   pgdata:
   grafana-data:
   model-cache:
+  ollama_data:

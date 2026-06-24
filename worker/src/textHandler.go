@@ -13,7 +13,6 @@ import (
 
 const (
 	chunkSize    = 100
-	chunkOverlap = 20
 	insertBuffer = 1
 )
 
@@ -73,7 +72,7 @@ func isHyphen(f string) bool {
 	return f == "-"
 }
 
-func chunkSubtitles(path string) ([]chunk, error) {
+func chunkSubtitles(path string, chunkOverlap int) ([]chunk, error) {
 	file, err := os.Open(path)
 
 	if err != nil {

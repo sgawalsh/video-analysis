@@ -1,11 +1,13 @@
 import SemanticSearchResult from './semanticSearchResult';
 import KeywordSearchResult from './keywordSearchResult';
+import TopicDetectionResult from './topicDetectionResult';
 import GenericResult from './genericResult';
 
 function SessionResultRouter({ jobType, results }) {
     const renderers = {
         "SEMANTIC_SEARCH": SemanticSearchResult,
         "KEYWORD_SEARCH": KeywordSearchResult,
+        "TOPIC_DETECTION": TopicDetectionResult,
     };
   const Renderer =
     renderers[jobType] ?? GenericResult;

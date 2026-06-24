@@ -28,7 +28,7 @@ func (w *Worker) semanticSearch(ctx context.Context, jobId int, videoURL string,
 
 	defer os.RemoveAll(tempDir)
 
-	myChunks, err := chunkSubtitles(subFiles[0])
+	myChunks, err := chunkSubtitles(subFiles[0], 20)
 	if err != nil {
 		return err
 	}
@@ -47,6 +47,8 @@ func (w *Worker) semanticSearch(ctx context.Context, jobId int, videoURL string,
 		return err
 	}
 
+	fmt.Printf("semantic matches: %v\n", semanticMatches)
+
 	resultJSON, err := json.Marshal(semanticMatches)
 	if err != nil {
 		return fmt.Errorf("Failed to marshal semantic search result: %w", err)
@@ -57,7 +59,7 @@ func (w *Worker) semanticSearch(ctx context.Context, jobId int, videoURL string,
 
 func evaluateSearchResults(distances []float32, indices []int64, chunks []chunk) ([]semanticMatch, error) {
 
-	const threshold float32 = 0.7
+	const threshold float32 = 0.6 // to be raised after testing
 
 	semanticMatches := make([]semanticMatch, 0)
 

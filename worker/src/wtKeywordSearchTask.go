@@ -27,7 +27,7 @@ func (w *Worker) keywordSearch(ctx context.Context, jobId int, videoURL string, 
 
 	defer os.RemoveAll(tempDir)
 
-	myChunks, err := chunkSubtitles(subFiles[0])
+	myChunks, err := chunkSubtitles(subFiles[0], 20)
 	if err != nil {
 		return err
 	}

@@ -1,0 +1,12 @@
+FROM ollama/ollama@sha256:9f15a90bc04c7ca57df43e7ed0495bd88f1c299c4a0d41b4bbdf65d647157708
+
+# Set the environment variable so Ollama listens on all interfaces inside the container
+ENV OLLAMA_HOST=0.0.0.0:11434
+
+RUN ollama serve & \
+    sleep 5 && \
+    ollama pull llama3.2:1b
+
+EXPOSE 11434
+
+CMD ["serve"]

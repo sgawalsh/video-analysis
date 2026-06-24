@@ -46,6 +46,7 @@ function SessionStatus() {
         es.addEventListener('job_completed', (e) => {
           const event = JSON.parse(e.data);
           console.log('job_completed fired');
+          console.log('incoming event: ', event)
 
           setSessionState((prev) => {
             if (!prev) return prev;
@@ -56,6 +57,7 @@ function SessionStatus() {
               ...item,
               target_id: targetId,
             }));
+          console.log('incoming: ', incoming)
 
             return {
               ...prev,
