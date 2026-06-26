@@ -16,11 +16,13 @@ var runningTimeout = os.Getenv("worker_running_timeout")
 type JobType string
 
 const (
-	jobTypeChannelSearch      JobType = "CHANNEL_SEARCH"
-	jobTypeSemanticSearch     JobType = "SEMANTIC_SEARCH"
-	jobTypeTopicDetection     JobType = "TOPIC_DETECTION"
-	jobTypeKeywordSearch      JobType = "KEYWORD_SEARCH"
-	jobTypeVideoSummarization JobType = "VIDEO_SUMMARIZATION"
+	jobTypeChannelSearch                JobType = "CHANNEL_SEARCH"
+	jobTypeKeywordSearch                JobType = "KEYWORD_SEARCH"
+	jobTypeSemanticSearch               JobType = "SEMANTIC_SEARCH"
+	jobTypeTopicDetectionEmbed          JobType = "TOPIC_DETECTION_EMBED"
+	jobTypeTopicDetectionLLM            JobType = "TOPIC_DETECTION_LLM"
+	jobTypeVideoSummarizationLLM        JobType = "VIDEO_SUMMARIZATION_LLM"
+	jobTypeVideoSummarizationTranscribe JobType = "VIDEO_SUMMARIZATION_TRANSCRIBE"
 )
 
 // Requeue stuck RUNNING jobs that have exceeded the time limit
@@ -57,13 +59,15 @@ func requeueStuckRunningJobs(ctx context.Context, db *sql.DB) ([]int, error) {
 	return jobIDs, nil
 }
 
-func (w *Worker) claimNextJob(ctx context.Context) (int, string, string, string, error) {
+func (w *Worker) claimNextJob(ctx context.Context, jobTypes []string) (int, string, string, string, error) {
 	var (
 		jobID    int
 		jobType  string
 		targetID string
 		query    sql.NullString
 	)
+
+	// log.Printf("jobtypes: %v", jobTypes)
 
 	err := w.db.QueryRowContext(ctx, `
 		UPDATE jobs
@@ -72,13 +76,13 @@ func (w *Worker) claimNextJob(ctx context.Context) (int, string, string, string,
 		WHERE id IN (
 			SELECT id
 			FROM jobs
-			WHERE status = $2
+			WHERE status = $2 AND type = ANY($3)
 			ORDER BY id
 			FOR UPDATE SKIP LOCKED
 			LIMIT 1
 		)
 		RETURNING id, type, target_id, query
-	`, StatusRunning, StatusPending).Scan(
+	`, StatusRunning, StatusPending, pq.Array(jobTypes)).Scan(
 		&jobID,
 		&jobType,
 		&targetID,
@@ -124,6 +128,39 @@ func (w *Worker) writeResultToDb(ctx context.Context, jobID int, resultJSON []by
 
 	if err != nil {
 		return fmt.Errorf("Failed to update result for job %d: %v", jobID, err)
+	}
+
+	return nil
+}
+
+func (w *Worker) createLlmJob(ctx context.Context, jobId int, newType JobType, inputJSON []byte) error {
+	tx, err := w.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	_, err = tx.ExecContext(ctx, `
+		UPDATE jobs
+		SET type = $1, status = $2
+		WHERE id = $3
+	`, newType, StatusPending, jobId)
+	if err != nil {
+		return fmt.Errorf("failed to update job %d: %w", jobId, err)
+	}
+
+	_, err = tx.ExecContext(ctx, `
+		INSERT INTO llm_job_info (job_id, input)
+		VALUES ($1, $2)
+		ON CONFLICT (job_id) 
+    	DO UPDATE SET input = EXCLUDED.input
+	`, jobId, inputJSON)
+	if err != nil {
+		return fmt.Errorf("failed to insert llm job info for job %d: %w", jobId, err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit llm job for job %d: %w", jobId, err)
 	}
 
 	return nil

@@ -7,9 +7,9 @@ function sessionRoutes({ pool, hub }) {
     
     const VALID_JOB_TYPES = Object.freeze([
     'SEMANTIC_SEARCH',
-    'TOPIC_DETECTION',
+    'TOPIC_DETECTION_EMBED',
     'KEYWORD_SEARCH',
-    'VIDEO_SUMMARIZATION'
+    'VIDEO_SUMMARIZATION_TRANSCRIBE'
     ]);
 
     router.post('/', async (req, res) => {
@@ -115,7 +115,7 @@ async function getSessionType(pool, public_id){
 async function getSessionResults(pool, public_id){
     const result = await pool.query(
         `
-        SELECT target_id, result FROM jobs WHERE session_public_id = $1 AND status = 'SUCCEEDED' AND type != 'CHANNEL_SEARCH
+        SELECT target_id, result FROM jobs WHERE session_public_id = $1 AND status = 'SUCCEEDED' AND type != 'CHANNEL_SEARCH'
         `,
         [public_id]
     );

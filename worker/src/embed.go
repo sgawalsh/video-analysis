@@ -25,15 +25,10 @@ type GetEmbeddingRequest struct {
 }
 
 type GetEmbeddingResponse struct {
-	Boundaries []int
-	Chapters   []Chapter
+	Boundaries   []int
+	ChapterTexts []string
 }
 
-type Chapter struct {
-	ID    int64
-	Title string
-	Text  string
-}
 type Client struct {
 	BaseURL string
 	Client  *http.Client
@@ -87,7 +82,7 @@ func (c *Client) embedAndSearch(ctx context.Context, texts []string, query strin
 	return out.Distances, out.Indices, nil
 }
 
-func (c *Client) getTopicWindows(ctx context.Context, texts []string) ([]int, []Chapter, error) {
+func (c *Client) getTopicWindows(ctx context.Context, texts []string) ([]int, []string, error) {
 
 	reqBody := GetEmbeddingRequest{Texts: texts}
 
@@ -123,5 +118,5 @@ func (c *Client) getTopicWindows(ctx context.Context, texts []string) ([]int, []
 		return nil, nil, err
 	}
 
-	return out.Boundaries, out.Chapters, nil
+	return out.Boundaries, out.ChapterTexts, nil
 }

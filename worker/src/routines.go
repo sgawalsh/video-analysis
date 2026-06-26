@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/stdlib"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 const (
@@ -36,7 +37,7 @@ func waitForNotification(ctx context.Context, conn *sql.Conn, timeout time.Durat
 	})
 }
 
-func (w *Worker) executeDBJobs(ctx context.Context) {
+func (w *Worker) executeDBJobs(ctx context.Context, channelNameCommand string, allowedJobTypes []string, handlerMap map[string]JobHandler, successCounter prometheus.Counter, failCounter prometheus.Counter) {
 	log.Println("DB worker is running...")
 
 	// Dedicated connection for LISTEN / NOTIFY
@@ -47,7 +48,7 @@ func (w *Worker) executeDBJobs(ctx context.Context) {
 	defer conn.Close()
 
 	// Start listening
-	if _, err := conn.ExecContext(ctx, "LISTEN jobs_available"); err != nil {
+	if _, err := conn.ExecContext(ctx, channelNameCommand); err != nil {
 		log.Fatalf("LISTEN failed: %v", err)
 	}
 	// Parse timeout interval
@@ -57,7 +58,7 @@ func (w *Worker) executeDBJobs(ctx context.Context) {
 		return
 	}
 
-	log.Println("Listening for job notifications...")
+	log.Printf("Listening for job notifications using %s", channelNameCommand)
 	for {
 		select {
 		case <-ctx.Done():
@@ -73,7 +74,7 @@ func (w *Worker) executeDBJobs(ctx context.Context) {
 
 			// Drain all available jobs
 			for {
-				jobID, jobType, targetID, query, err := w.claimNextJob(ctx)
+				jobID, jobType, targetID, query, err := w.claimNextJob(ctx, allowedJobTypes)
 				if err != nil {
 					if err == sql.ErrNoRows {
 						break // no available work
@@ -84,35 +85,15 @@ func (w *Worker) executeDBJobs(ctx context.Context) {
 
 				log.Printf("Claimed job %d of type %s", jobID, jobType)
 
-				switch jobType {
-				case "CHANNEL_SEARCH":
-					if err := w.channelSearch(ctx, jobID, targetID); err != nil {
-						w.failJob(ctx, jobID, err)
-						continue
-					}
-				case "SEMANTIC_SEARCH":
-					if err := w.semanticSearch(ctx, jobID, targetID, query); err != nil {
-						w.failJob(ctx, jobID, err)
-						continue
-					}
-				case "TOPIC_DETECTION":
-					if err := w.topicDetection(ctx, jobID, targetID); err != nil {
-						w.failJob(ctx, jobID, err)
-						continue
-					}
-				case "KEYWORD_SEARCH":
-					if err := w.keywordSearch(ctx, jobID, targetID, query); err != nil {
-						w.failJob(ctx, jobID, err)
-						continue
-					}
-				case "VIDEO_SUMMARIZATION":
-					if err := w.videoSummarization(ctx, jobID, targetID); err != nil {
-						w.failJob(ctx, jobID, err)
-						continue
-					}
-				default:
-					log.Printf("Unknown job type %s for job %d", jobType, jobID)
-					w.failJob(ctx, jobID, errors.New("Unknown job type"))
+				handler, ok := handlerMap[jobType]
+				if !ok {
+					log.Printf("Unknown job type %s", jobType)
+					w.failJob(ctx, jobID, errors.New("unknown job type"), failCounter)
+					continue
+				}
+
+				if err := handler(ctx, jobID, targetID, query); err != nil {
+					w.failJob(ctx, jobID, err, failCounter)
 					continue
 				}
 
@@ -127,11 +108,93 @@ func (w *Worker) executeDBJobs(ctx context.Context) {
 
 				log.Printf("Job %d completed successfully", jobID)
 
-				jobsProcessed.Inc()
+				successCounter.Inc()
 			}
 		}
 	}
 }
+
+// func (w *Worker) executeLlmDBJobs(ctx context.Context) {
+// 	log.Println("LLM worker is running...")
+
+// 	// Dedicated connection for LISTEN / NOTIFY
+// 	conn, err := w.db.Conn(ctx)
+// 	if err != nil {
+// 		log.Fatalf("Failed to get DB conn for LISTEN: %v", err)
+// 	}
+// 	defer conn.Close()
+
+// 	// Start listening
+// 	if _, err := conn.ExecContext(ctx, "LISTEN llm_jobs_available"); err != nil {
+// 		log.Fatalf("LISTEN failed: %v", err)
+// 	}
+// 	// Parse timeout interval
+// 	workerTimeoutInterval, err := strconv.Atoi(workerTimeoutInterval)
+// 	if err != nil {
+// 		log.Fatalf("Failed to parse worker_execution_timeout_interval: %v", err)
+// 		return
+// 	}
+
+// 	log.Println("Listening for job notifications...")
+// 	for {
+// 		select {
+// 		case <-ctx.Done():
+// 			log.Println("Worker shutting down")
+// 			return
+
+// 		default:
+// 			// Wait for notification OR timeout
+// 			err = waitForNotification(ctx, conn, time.Duration(workerTimeoutInterval)*time.Second)
+// 			if err != nil && !errors.Is(err, context.DeadlineExceeded) && ctx.Err() == nil {
+// 				log.Printf("Notification wait error: %v", err)
+// 			}
+
+// 			// Drain all available jobs
+// 			for {
+// 				jobID, jobType, _, _, err := w.claimNextJob(ctx, llmJobs)
+// 				if err != nil {
+// 					if err == sql.ErrNoRows {
+// 						break // no available work
+// 					}
+// 					log.Printf("Failed to claim job: %v", err)
+// 					break
+// 				}
+
+// 				log.Printf("Claimed job %d of type %s", jobID, jobType)
+
+// 				switch jobType {
+// 				case "TOPIC_DETECTION_LLM":
+// 					if err := w.topicDetectionLLM(ctx, jobID); err != nil {
+// 						w.failJob(ctx, jobID, err, llmJobsFailed)
+// 						continue
+// 					}
+// 				case "VIDEO_SUMMARIZATION_LLM":
+// 					if err := w.videoSummarizationLLM(ctx, jobID); err != nil {
+// 						w.failJob(ctx, jobID, err, llmJobsFailed)
+// 						continue
+// 					}
+// 				default:
+// 					log.Printf("Unknown job type %s for job %d", jobType, jobID)
+// 					w.failJob(ctx, jobID, errors.New("Unknown job type"), llmJobsFailed)
+// 					continue
+// 				}
+
+// 				if _, err := w.db.ExecContext(ctx, `
+// 					UPDATE jobs
+// 					SET status = $1
+// 					WHERE id = $2 AND status = $3
+// 				`, StatusSucceeded, jobID, StatusRunning); err != nil {
+// 					log.Printf("Failed to set job status to SUCCEEDED for job %d: %v", jobID, err)
+// 					continue
+// 				}
+
+// 				log.Printf("Job %d completed successfully", jobID)
+
+// 				llmJobsProcessed.Inc()
+// 			}
+// 		}
+// 	}
+// }
 
 func (w *Worker) pollPendingJobs(ctx context.Context) {
 	interval, err := strconv.Atoi(pollingInterval)
@@ -160,8 +223,8 @@ func (w *Worker) pollPendingJobs(ctx context.Context) {
 	}
 }
 
-func (w *Worker) failJob(ctx context.Context, jobID int, err error) {
+func (w *Worker) failJob(ctx context.Context, jobID int, err error, pCounter prometheus.Counter) {
 	w.handleJobFailure(ctx, jobID, err)
-	jobsFailed.Inc()
+	pCounter.Inc()
 	log.Printf("Job %d failed: %v", jobID, err)
 }

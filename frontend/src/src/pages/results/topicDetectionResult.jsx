@@ -61,7 +61,7 @@ function TopicDetectionResult({ results }) {
                       rel="noopener noreferrer"
                       style={{ textDecoration: "none" }}
                     >
-                      {topic.Title.replace(/^"|"$/g, "")}
+                      {topic.Text.replace(/^"|"$/g, "")}
                       {" "}
                       <span style={{ color: "#666" }}>
                         ({topic.StartTime}s)

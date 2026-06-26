@@ -7,10 +7,12 @@ async function runMigrations(pool, { enableCron = false } = {}) {
       IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'job_type') THEN
         CREATE TYPE job_type AS ENUM (
           'CHANNEL_SEARCH',
-          'SEMANTIC_SEARCH',
-          'TOPIC_DETECTION',
           'KEYWORD_SEARCH',
-          'VIDEO_SUMMARIZATION'
+          'SEMANTIC_SEARCH',
+          'TOPIC_DETECTION_EMBED',
+          'TOPIC_DETECTION_LLM',
+          'VIDEO_SUMMARIZATION_TRANSCRIBE',
+          'VIDEO_SUMMARIZATION_LLM'
         );
       END IF;
     END$$;
@@ -66,6 +68,14 @@ async function runMigrations(pool, { enableCron = false } = {}) {
       last_error TEXT
     )
   `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS llm_job_info (
+      id SERIAL PRIMARY KEY,
+      job_id INT NOT NULL UNIQUE REFERENCES jobs(id) ON DELETE CASCADE,
+      input JSONB
+    )
+  `);
   
   // Create index on status for efficient querying of pending jobs for KEDA
   await pool.query(`
@@ -76,7 +86,7 @@ async function runMigrations(pool, { enableCron = false } = {}) {
 
   //create unique index to prevent duplicate jobs for same session and target
   await pool.query(`
-    CREATE UNIQUE INDEX jobs_session_type_target_unique
+    CREATE UNIQUE INDEX IF NOT EXISTS jobs_session_type_target_unique
     ON jobs (session_id, target_id);
   `);
 
@@ -85,28 +95,25 @@ async function runMigrations(pool, { enableCron = false } = {}) {
     CREATE OR REPLACE FUNCTION sse_notifications()
     RETURNS TRIGGER AS $$
     BEGIN
-      IF OLD.status IS DISTINCT FROM NEW.status AND NEW.type != 'CHANNEL_SEARCH' THEN
 
+      PERFORM pg_notify(
+        'session_events',
+        json_build_object(
+          'session_public_id', NEW.session_public_id,
+          'n_type', 'status_changed'
+        )::text
+      );
+
+      IF NEW.status = 'SUCCEEDED' THEN
         PERFORM pg_notify(
           'session_events',
           json_build_object(
             'session_public_id', NEW.session_public_id,
-            'n_type', 'status_changed'
+            'n_type', 'job_completed',
+            'target_id', NEW.target_id,
+            'result', NEW.result
           )::text
         );
-
-        IF NEW.status = 'SUCCEEDED' THEN
-          PERFORM pg_notify(
-            'session_events',
-            json_build_object(
-              'session_public_id', NEW.session_public_id,
-              'n_type', 'job_completed',
-              'target_id', NEW.target_id,
-              'result', NEW.result
-            )::text
-          );
-        END IF;
-
       END IF;
 
       RETURN NEW;
@@ -124,6 +131,7 @@ async function runMigrations(pool, { enableCron = false } = {}) {
         CREATE TRIGGER sse_notifications_trigger
         AFTER UPDATE ON jobs
         FOR EACH ROW
+        WHEN (OLD.status IS DISTINCT FROM NEW.status AND NEW.type IS DISTINCT FROM 'CHANNEL_SEARCH')
         EXECUTE FUNCTION sse_notifications();
       END IF;
     END
@@ -162,10 +170,10 @@ async function runMigrations(pool, { enableCron = false } = {}) {
     CREATE OR REPLACE FUNCTION notify_jobs_available()
     RETURNS trigger AS $$
     BEGIN
-      IF NEW.status = 'PENDING'
-        AND (TG_OP = 'INSERT' OR OLD.status IS DISTINCT FROM NEW.status)
-      THEN
+      IF NEW.type IN ('CHANNEL_SEARCH', 'KEYWORD_SEARCH', 'SEMANTIC_SEARCH', 'TOPIC_DETECTION_EMBED', 'VIDEO_SUMMARIZATION_TRANSCRIBE') THEN
         PERFORM pg_notify('jobs_available', '');
+      ELSIF NEW.type IN ('TOPIC_DETECTION_LLM', 'VIDEO_SUMMARIZATION_LLM') THEN
+        PERFORM pg_notify('llm_jobs_available', '');
       END IF;
       RETURN NEW;
     END;
@@ -185,6 +193,7 @@ async function runMigrations(pool, { enableCron = false } = {}) {
         AFTER INSERT OR UPDATE OF status
         ON jobs
         FOR EACH ROW
+        WHEN (NEW.status = 'PENDING')
         EXECUTE FUNCTION notify_jobs_available();
       END IF;
     END

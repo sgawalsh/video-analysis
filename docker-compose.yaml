@@ -47,8 +47,19 @@ services:
     environment:
       role: worker
       worker_concurrency: "${worker_concurrency:-1}"
-    # deploy:
-      # replicas: 2
+    deploy:
+      replicas: 2
+
+  llm_worker:
+    build: ./worker
+    depends_on:
+      - postgres
+      - migrate
+    env_file:
+      - .env
+    environment:
+      role: llm_worker
+      llm_concurrency: "${llm_concurrency:-1}"
 
   model:
     build: ./model

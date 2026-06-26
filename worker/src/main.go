@@ -33,6 +33,26 @@ var (
 	)
 )
 
+var (
+	llmJobsProcessed = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Name: "llm_worker_jobs_processed_total",
+			Help: "Total llm jobs processed",
+		},
+	)
+)
+
+var (
+	llmJobsFailed = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Name: "llm_worker_jobs_failed_total",
+			Help: "Total llm jobs failed",
+		},
+	)
+)
+
+type JobHandler func(ctx context.Context, jobID int, targetID, query string) error
+
 func main() {
 	log.Println("Worker starting...")
 
@@ -61,6 +81,23 @@ func main() {
 	case "worker": // Start DB jobs consumer
 		prometheus.MustRegister(jobsProcessed)
 		prometheus.MustRegister(jobsFailed)
+		var handlerMap = map[string]JobHandler{
+			"CHANNEL_SEARCH": func(ctx context.Context, jobID int, targetID, query string) error {
+				return w.channelSearch(ctx, jobID, targetID)
+			},
+			"KEYWORD_SEARCH": func(ctx context.Context, jobID int, targetID, query string) error {
+				return w.keywordSearch(ctx, jobID, targetID, query)
+			},
+			"SEMANTIC_SEARCH": func(ctx context.Context, jobID int, targetID, query string) error {
+				return w.semanticSearch(ctx, jobID, targetID, query)
+			},
+			"TOPIC_DETECTION_EMBED": func(ctx context.Context, jobID int, targetID, query string) error {
+				return w.topicDetectionEmbed(ctx, jobID, targetID)
+			},
+			"VIDEO_SUMMARIZATION_TRANSCRIBE": func(ctx context.Context, jobID int, targetID, query string) error {
+				return w.videoSummarizationTranscribe(ctx, jobID, targetID)
+			},
+		}
 
 		concurrency, err := strconv.Atoi(os.Getenv("worker_concurrency"))
 		if err != nil {
@@ -69,11 +106,34 @@ func main() {
 
 		for i := 0; i < concurrency; i++ {
 			wg.Go(func() {
-				w.executeDBJobs(ctx)
+				w.executeDBJobs(ctx, "LISTEN jobs_available", keysFromMap(handlerMap), handlerMap, jobsProcessed, jobsFailed)
+			})
+		}
+	case "llm_worker": // Start llm jobs consumer
+		prometheus.MustRegister(llmJobsProcessed)
+		prometheus.MustRegister(llmJobsFailed)
+
+		var handlerMap = map[string]JobHandler{
+			"TOPIC_DETECTION_LLM": func(ctx context.Context, jobID int, targetID, query string) error {
+				return w.topicDetectionLLM(ctx, jobID)
+			},
+			"VIDEO_SUMMARIZATION_LLM": func(ctx context.Context, jobID int, targetID, query string) error {
+				return w.videoSummarizationLLM(ctx, jobID)
+			},
+		}
+
+		concurrency, err := strconv.Atoi(os.Getenv("llm_concurrency"))
+		if err != nil {
+			concurrency = 1
+		}
+
+		for i := 0; i < concurrency; i++ {
+			wg.Go(func() {
+				w.executeDBJobs(ctx, "LISTEN llm_jobs_available", keysFromMap(handlerMap), handlerMap, llmJobsProcessed, llmJobsFailed)
 			})
 		}
 	default:
-		log.Fatal("role must be poller or worker")
+		log.Fatal("role must be poller, worker, or llm_worker")
 	}
 
 	// Handle shutdown signals
@@ -102,4 +162,14 @@ func main() {
 	}
 
 	log.Println("Worker stopped")
+}
+
+func keysFromMap(myMap map[string]JobHandler) []string {
+	keys := make([]string, 0, len(myMap))
+
+	for k := range myMap {
+		keys = append(keys, k)
+	}
+
+	return keys
 }

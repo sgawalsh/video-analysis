@@ -59,48 +59,13 @@ def getTopicWindows(payload: dict):
 
     segments = []
     for low, high in zip(boundaries[:-1], boundaries[1:]):
-        segments.append(texts[low:high])
+        segments.append(" ".join(texts[low:high]))
 
-    segments.append(texts[boundaries[-1]:])
-    segments = [" ".join(seg) for seg in segments]
-
-    segmentedChapters = []
-
-    for idx, segment_text in enumerate(segments):
-        truncated_text = " ".join(segment_text.split()[:300]) 
-        
-        prompt = (
-            f"Write a short, descriptive video chapter title (under 5 words) for this transcript segment. Respond with just the title, do not include introductory words or punctuation. Text: {truncated_text}"
-        )
-        
-        try:
-            payload = {
-                "model": "llama3.2:1b",
-                "prompt": prompt,
-                "stream": False,
-                "options": {
-                    "num_predict": 10,   # Hard token limit saves CPU cycles per chunk
-                    "temperature": 0.1
-                }
-            }
-            
-            response = requests.post(ollamaUrl, json=payload, timeout=500)
-            title = response.json().get("response", f"Chapter {idx + 1}").strip()
-        except Exception:
-            title = f"Chapter {idx + 1}" # Fallback if the LLM times out under load
-            print("Timed out!")
-            
-        segmentedChapters.append({
-            "ID": idx,
-            "Title": title,
-            "Text": segment_text
-        })
-
-        print(f"Title: {title}")
+    segments.append(" ".join(texts[boundaries[-1]:]))
 
     return {
         "boundaries": boundaries,
-        "chapters": segmentedChapters
+        "chapterTexts": segments
     }
 
 def windowEmbeddingsToSimilarities(embeddings):

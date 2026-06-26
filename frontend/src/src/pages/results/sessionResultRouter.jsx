@@ -7,7 +7,7 @@ function SessionResultRouter({ jobType, results }) {
     const renderers = {
         "SEMANTIC_SEARCH": SemanticSearchResult,
         "KEYWORD_SEARCH": KeywordSearchResult,
-        "TOPIC_DETECTION": TopicDetectionResult,
+        "TOPIC_DETECTION_EMBED": TopicDetectionResult,
     };
   const Renderer =
     renderers[jobType] ?? GenericResult;

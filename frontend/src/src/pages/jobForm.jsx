@@ -145,7 +145,7 @@ function JobForm() {
               >
                 <option value="SEMANTIC_SEARCH">Semantic Search</option>
                 <option value="KEYWORD_SEARCH">Keyword Search</option>
-                <option value="TOPIC_DETECTION">Topic Detection</option>
+                <option value="TOPIC_DETECTION_EMBED">Topic Detection</option>
                 <option value="VIDEO_SUMMARIZATION">Video Summarization</option>
               </select>
             </label>

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"time"
 )
 
 type semanticMatch struct {
@@ -24,18 +23,12 @@ func (w *Worker) semanticSearch(ctx context.Context, jobId int, videoURL string,
 		return err
 	}
 
-	// fmt.Printf("got the subs!\n")
-
 	defer os.RemoveAll(tempDir)
 
 	myChunks, err := chunkSubtitles(subFiles[0], 20)
 	if err != nil {
 		return err
 	}
-
-	// for i := 0; i < len(myChunks); i++ {
-	// 	myChunks[i] = formatText(myChunks[i])
-	// }
 
 	distances, indices, err := searchChunksForQuery(myChunks, query)
 	if err != nil {
@@ -90,23 +83,6 @@ func evaluateSearchResults(distances []float32, indices []int64, chunks []chunk)
 	}
 
 	return semanticMatches, nil
-}
-
-// func formatText(c chunk) chunk { // remove isolated hyphens
-// 	c.Text = slices.DeleteFunc(c.Text, func(f string) bool {
-// 		return f == "-"
-// 	})
-// 	return c
-// }
-
-func formatTimestamp(ms int64) string {
-	d := time.Duration(ms) * time.Millisecond
-
-	h := int(d.Hours())
-	m := int(d.Minutes()) % 60
-	s := int(d.Seconds()) % 60
-
-	return fmt.Sprintf("%02d:%02d:%02d", h, m, s)
 }
 
 func searchChunksForQuery(chunks []chunk, query string) ([]float32, []int64, error) {
