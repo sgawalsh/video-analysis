@@ -72,7 +72,7 @@ func isHyphen(f string) bool {
 	return f == "-"
 }
 
-func chunkSubtitles(path string, chunkOverlap int) ([]chunk, error) {
+func chunkSubtitles(path string, chunkOverlap int, chunkSizeParam int) ([]chunk, error) {
 	file, err := os.Open(path)
 
 	if err != nil {
@@ -95,11 +95,13 @@ func chunkSubtitles(path string, chunkOverlap int) ([]chunk, error) {
 		StartTime: subs.Items[0].StartAt.Milliseconds(),
 	}
 
+	targetSize := max(chunkSize, chunkSizeParam) // compares global chunkSize with param
+
 	for i, item := range subs.Items {
 		words := strings.Fields(item.String())
 		words = slices.DeleteFunc(words, isHyphen) // remove isolated hyphens
 
-		if len(currChunk.Text)+len(words) <= chunkSize {
+		if len(currChunk.Text)+len(words) <= targetSize {
 			indexTimes = append(indexTimes, wordIndexTime{
 				wordIndex: len(currChunk.Text),
 				timeStamp: item.StartAt.Milliseconds(),

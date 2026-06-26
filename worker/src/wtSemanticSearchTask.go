@@ -25,7 +25,7 @@ func (w *Worker) semanticSearch(ctx context.Context, jobId int, videoURL string,
 
 	defer os.RemoveAll(tempDir)
 
-	myChunks, err := chunkSubtitles(subFiles[0], 20)
+	myChunks, err := chunkSubtitles(subFiles[0], 20, 0)
 	if err != nil {
 		return err
 	}
