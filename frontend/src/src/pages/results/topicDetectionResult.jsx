@@ -1,4 +1,4 @@
-import FormatMMSS from '../format'
+import FormatMMSS from '../../format'
 
 function TopicDetectionResult({ results }) {
   const rows = Object.entries(results || {})

@@ -1,4 +1,4 @@
-import FormatMMSS from '../format'
+import FormatMMSS from '../../format'
 
 function SemanticSearchResult({ results }) {
 
