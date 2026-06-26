@@ -24,7 +24,7 @@ type JobInfo struct {
 	ID       int
 	Type     string
 	TargetID string
-	Query    string
+	Query    sql.NullString
 }
 
 var pollingInterval = os.Getenv("worker_poll_interval")

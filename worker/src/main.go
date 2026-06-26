@@ -86,10 +86,10 @@ func main() {
 				return w.channelSearch(ctx, jobInfo.ID, jobInfo.TargetID)
 			},
 			"KEYWORD_SEARCH": func(ctx context.Context, jobInfo JobInfo) error {
-				return w.keywordSearch(ctx, jobInfo.ID, jobInfo.TargetID, jobInfo.Query)
+				return w.keywordSearch(ctx, jobInfo.ID, jobInfo.TargetID, jobInfo.Query.String)
 			},
 			"SEMANTIC_SEARCH": func(ctx context.Context, jobInfo JobInfo) error {
-				return w.semanticSearch(ctx, jobInfo.ID, jobInfo.TargetID, jobInfo.Query)
+				return w.semanticSearch(ctx, jobInfo.ID, jobInfo.TargetID, jobInfo.Query.String)
 			},
 			"TOPIC_DETECTION_EMBED": func(ctx context.Context, jobInfo JobInfo) error {
 				return w.topicDetectionEmbed(ctx, jobInfo.ID, jobInfo.TargetID)
