@@ -59,15 +59,8 @@ func requeueStuckRunningJobs(ctx context.Context, db *sql.DB) ([]int, error) {
 	return jobIDs, nil
 }
 
-func (w *Worker) claimNextJob(ctx context.Context, jobTypes []string) (int, string, string, string, error) {
-	var (
-		jobID    int
-		jobType  string
-		targetID string
-		query    sql.NullString
-	)
-
-	// log.Printf("jobtypes: %v", jobTypes)
+func (w *Worker) claimNextJob(ctx context.Context, jobTypes []string) (JobInfo, error) {
+	var job JobInfo
 
 	err := w.db.QueryRowContext(ctx, `
 		UPDATE jobs
@@ -83,17 +76,17 @@ func (w *Worker) claimNextJob(ctx context.Context, jobTypes []string) (int, stri
 		)
 		RETURNING id, type, target_id, query
 	`, StatusRunning, StatusPending, pq.Array(jobTypes)).Scan(
-		&jobID,
-		&jobType,
-		&targetID,
-		&query,
+		&job.ID,
+		&job.Type,
+		&job.TargetID,
+		&job.Query,
 	)
 
 	if err != nil {
-		return 0, "", "", "", err
+		return job, err
 	}
 
-	return jobID, jobType, targetID, query.String, nil
+	return job, nil
 }
 
 func (w *Worker) handleJobFailure(ctx context.Context, jobID int, err error) {

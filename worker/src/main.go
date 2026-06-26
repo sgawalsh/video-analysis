@@ -51,7 +51,7 @@ var (
 	)
 )
 
-type JobHandler func(ctx context.Context, jobID int, targetID, query string) error
+type JobHandler func(ctx context.Context, jobInfo JobInfo) error
 
 func main() {
 	log.Println("Worker starting...")
@@ -82,20 +82,20 @@ func main() {
 		prometheus.MustRegister(jobsProcessed)
 		prometheus.MustRegister(jobsFailed)
 		var handlerMap = map[string]JobHandler{
-			"CHANNEL_SEARCH": func(ctx context.Context, jobID int, targetID, query string) error {
-				return w.channelSearch(ctx, jobID, targetID)
+			"CHANNEL_SEARCH": func(ctx context.Context, jobInfo JobInfo) error {
+				return w.channelSearch(ctx, jobInfo.ID, jobInfo.TargetID)
 			},
-			"KEYWORD_SEARCH": func(ctx context.Context, jobID int, targetID, query string) error {
-				return w.keywordSearch(ctx, jobID, targetID, query)
+			"KEYWORD_SEARCH": func(ctx context.Context, jobInfo JobInfo) error {
+				return w.keywordSearch(ctx, jobInfo.ID, jobInfo.TargetID, jobInfo.Query)
 			},
-			"SEMANTIC_SEARCH": func(ctx context.Context, jobID int, targetID, query string) error {
-				return w.semanticSearch(ctx, jobID, targetID, query)
+			"SEMANTIC_SEARCH": func(ctx context.Context, jobInfo JobInfo) error {
+				return w.semanticSearch(ctx, jobInfo.ID, jobInfo.TargetID, jobInfo.Query)
 			},
-			"TOPIC_DETECTION_EMBED": func(ctx context.Context, jobID int, targetID, query string) error {
-				return w.topicDetectionEmbed(ctx, jobID, targetID)
+			"TOPIC_DETECTION_EMBED": func(ctx context.Context, jobInfo JobInfo) error {
+				return w.topicDetectionEmbed(ctx, jobInfo.ID, jobInfo.TargetID)
 			},
-			"VIDEO_SUMMARIZATION_TRANSCRIBE": func(ctx context.Context, jobID int, targetID, query string) error {
-				return w.videoSummarizationTranscribe(ctx, jobID, targetID)
+			"VIDEO_SUMMARIZATION_TRANSCRIBE": func(ctx context.Context, jobInfo JobInfo) error {
+				return w.videoSummarizationTranscribe(ctx, jobInfo.ID, jobInfo.TargetID)
 			},
 		}
 
@@ -114,11 +114,11 @@ func main() {
 		prometheus.MustRegister(llmJobsFailed)
 
 		var handlerMap = map[string]JobHandler{
-			"TOPIC_DETECTION_LLM": func(ctx context.Context, jobID int, targetID, query string) error {
-				return w.topicDetectionLLM(ctx, jobID)
+			"TOPIC_DETECTION_LLM": func(ctx context.Context, jobInfo JobInfo) error {
+				return w.topicDetectionLLM(ctx, jobInfo.ID)
 			},
-			"VIDEO_SUMMARIZATION_LLM": func(ctx context.Context, jobID int, targetID, query string) error {
-				return w.videoSummarizationLLM(ctx, jobID)
+			"VIDEO_SUMMARIZATION_LLM": func(ctx context.Context, jobInfo JobInfo) error {
+				return w.videoSummarizationLLM(ctx, jobInfo.ID)
 			},
 		}
 

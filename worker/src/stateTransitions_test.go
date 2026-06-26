@@ -64,10 +64,10 @@ func TestClaimJob(t *testing.T) {
 	w, err := NewWorker()
 	require.NoError(t, err)
 
-	id, _, _, _, err := w.claimNextJob(ctx, []string{"CHANNEL_SEARCH"})
+	jobInfo, err := w.claimNextJob(ctx, []string{"CHANNEL_SEARCH"})
 	require.NoError(t, err)
 
-	require.Equal(t, 1, id)
+	require.Equal(t, 1, jobInfo.ID)
 
 	// Assert DB state
 	rows, err = db.Query(`

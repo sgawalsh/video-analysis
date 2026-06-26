@@ -20,6 +20,13 @@ const (
 	StatusFailed    = "FAILED"
 )
 
+type JobInfo struct {
+	ID       int
+	Type     string
+	TargetID string
+	Query    string
+}
+
 var pollingInterval = os.Getenv("worker_poll_interval")
 var workerTimeoutInterval = os.Getenv("worker_execution_timeout_interval")
 
@@ -74,7 +81,7 @@ func (w *Worker) executeDBJobs(ctx context.Context, channelNameCommand string, a
 
 			// Drain all available jobs
 			for {
-				jobID, jobType, targetID, query, err := w.claimNextJob(ctx, allowedJobTypes)
+				JobInfo, err := w.claimNextJob(ctx, allowedJobTypes)
 				if err != nil {
 					if err == sql.ErrNoRows {
 						break // no available work
@@ -83,17 +90,17 @@ func (w *Worker) executeDBJobs(ctx context.Context, channelNameCommand string, a
 					break
 				}
 
-				log.Printf("Claimed job %d of type %s", jobID, jobType)
+				log.Printf("Claimed job %d of type %s", JobInfo.ID, JobInfo.Type)
 
-				handler, ok := handlerMap[jobType]
+				handler, ok := handlerMap[JobInfo.Type]
 				if !ok {
-					log.Printf("Unknown job type %s", jobType)
-					w.failJob(ctx, jobID, errors.New("unknown job type"), failCounter)
+					log.Printf("Unknown job type %s", JobInfo.Type)
+					w.failJob(ctx, JobInfo.ID, errors.New("unknown job type"), failCounter)
 					continue
 				}
 
-				if err := handler(ctx, jobID, targetID, query); err != nil {
-					w.failJob(ctx, jobID, err, failCounter)
+				if err := handler(ctx, JobInfo); err != nil {
+					w.failJob(ctx, JobInfo.ID, err, failCounter)
 					continue
 				}
 
@@ -101,100 +108,18 @@ func (w *Worker) executeDBJobs(ctx context.Context, channelNameCommand string, a
 					UPDATE jobs
 					SET status = $1
 					WHERE id = $2 AND status = $3
-				`, StatusSucceeded, jobID, StatusRunning); err != nil {
-					log.Printf("Failed to set job status to SUCCEEDED for job %d: %v", jobID, err)
+				`, StatusSucceeded, JobInfo.ID, StatusRunning); err != nil {
+					log.Printf("Failed to set job status to SUCCEEDED for job %d: %v", JobInfo.ID, err)
 					continue
 				}
 
-				log.Printf("Job %d completed successfully", jobID)
+				log.Printf("Job %d completed successfully", JobInfo.ID)
 
 				successCounter.Inc()
 			}
 		}
 	}
 }
-
-// func (w *Worker) executeLlmDBJobs(ctx context.Context) {
-// 	log.Println("LLM worker is running...")
-
-// 	// Dedicated connection for LISTEN / NOTIFY
-// 	conn, err := w.db.Conn(ctx)
-// 	if err != nil {
-// 		log.Fatalf("Failed to get DB conn for LISTEN: %v", err)
-// 	}
-// 	defer conn.Close()
-
-// 	// Start listening
-// 	if _, err := conn.ExecContext(ctx, "LISTEN llm_jobs_available"); err != nil {
-// 		log.Fatalf("LISTEN failed: %v", err)
-// 	}
-// 	// Parse timeout interval
-// 	workerTimeoutInterval, err := strconv.Atoi(workerTimeoutInterval)
-// 	if err != nil {
-// 		log.Fatalf("Failed to parse worker_execution_timeout_interval: %v", err)
-// 		return
-// 	}
-
-// 	log.Println("Listening for job notifications...")
-// 	for {
-// 		select {
-// 		case <-ctx.Done():
-// 			log.Println("Worker shutting down")
-// 			return
-
-// 		default:
-// 			// Wait for notification OR timeout
-// 			err = waitForNotification(ctx, conn, time.Duration(workerTimeoutInterval)*time.Second)
-// 			if err != nil && !errors.Is(err, context.DeadlineExceeded) && ctx.Err() == nil {
-// 				log.Printf("Notification wait error: %v", err)
-// 			}
-
-// 			// Drain all available jobs
-// 			for {
-// 				jobID, jobType, _, _, err := w.claimNextJob(ctx, llmJobs)
-// 				if err != nil {
-// 					if err == sql.ErrNoRows {
-// 						break // no available work
-// 					}
-// 					log.Printf("Failed to claim job: %v", err)
-// 					break
-// 				}
-
-// 				log.Printf("Claimed job %d of type %s", jobID, jobType)
-
-// 				switch jobType {
-// 				case "TOPIC_DETECTION_LLM":
-// 					if err := w.topicDetectionLLM(ctx, jobID); err != nil {
-// 						w.failJob(ctx, jobID, err, llmJobsFailed)
-// 						continue
-// 					}
-// 				case "VIDEO_SUMMARIZATION_LLM":
-// 					if err := w.videoSummarizationLLM(ctx, jobID); err != nil {
-// 						w.failJob(ctx, jobID, err, llmJobsFailed)
-// 						continue
-// 					}
-// 				default:
-// 					log.Printf("Unknown job type %s for job %d", jobType, jobID)
-// 					w.failJob(ctx, jobID, errors.New("Unknown job type"), llmJobsFailed)
-// 					continue
-// 				}
-
-// 				if _, err := w.db.ExecContext(ctx, `
-// 					UPDATE jobs
-// 					SET status = $1
-// 					WHERE id = $2 AND status = $3
-// 				`, StatusSucceeded, jobID, StatusRunning); err != nil {
-// 					log.Printf("Failed to set job status to SUCCEEDED for job %d: %v", jobID, err)
-// 					continue
-// 				}
-
-// 				log.Printf("Job %d completed successfully", jobID)
-
-// 				llmJobsProcessed.Inc()
-// 			}
-// 		}
-// 	}
-// }
 
 func (w *Worker) pollPendingJobs(ctx context.Context) {
 	interval, err := strconv.Atoi(pollingInterval)
