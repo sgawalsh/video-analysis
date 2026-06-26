@@ -1,3 +1,5 @@
+import FormatMMSS from '../format'
+
 function TopicDetectionResult({ results }) {
   const rows = Object.entries(results || {})
       .map(([targetId, topics]) => ({
@@ -64,7 +66,7 @@ function TopicDetectionResult({ results }) {
                       {topic.Text.replace(/^"|"$/g, "")}
                       {" "}
                       <span style={{ color: "#666" }}>
-                        ({topic.StartTime}s)
+                        ({FormatMMSS(topic.StartTime)}s)
                       </span>
                     </a>
                   </div>

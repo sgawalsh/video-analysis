@@ -1,3 +1,5 @@
+import FormatMMSS from '../format'
+
 function SemanticSearchResult({ results }) {
 
   const allMatches = Object.entries(results)
@@ -67,7 +69,7 @@ function SemanticSearchResult({ results }) {
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  Link - {match.StartTime}s
+                  Link - {FormatMMSS(match.StartTime)}s
                 </a>
               </td>
             </tr>

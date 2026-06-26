@@ -1,3 +1,5 @@
+import FormatMMSS from '../format'
+
 function KeywordSearchResult({ results }) {
 
   const allMatches = Object.entries(results)
@@ -51,7 +53,7 @@ function KeywordSearchResult({ results }) {
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  Link - {match.StartTime}s
+                  Link - {FormatMMSS(match.StartTime)}s
                 </a>
               </td>
             </tr>
