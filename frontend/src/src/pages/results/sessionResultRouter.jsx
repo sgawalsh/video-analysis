@@ -1,6 +1,7 @@
 import SemanticSearchResult from './semanticSearchResult';
 import KeywordSearchResult from './keywordSearchResult';
 import TopicDetectionResult from './topicDetectionResult';
+import VideoSummarizationResult from './videoSummarizationResult';
 import GenericResult from './genericResult';
 
 function SessionResultRouter({ jobType, results }) {
@@ -8,6 +9,7 @@ function SessionResultRouter({ jobType, results }) {
         "SEMANTIC_SEARCH": SemanticSearchResult,
         "KEYWORD_SEARCH": KeywordSearchResult,
         "TOPIC_DETECTION_EMBED": TopicDetectionResult,
+        "VIDEO_SUMMARIZATION_TRANSCRIBE": VideoSummarizationResult,
     };
   const Renderer =
     renderers[jobType] ?? GenericResult;
