@@ -1,4 +1,5 @@
 import FormatMMSS from '../../format'
+import LinkedThumbnailTitle from "./components/linkedThumbnailTitle";
 
 function SemanticSearchResult({ results }) {
 
@@ -55,13 +56,7 @@ function SemanticSearchResult({ results }) {
                 <div>{match.Distance.toFixed(3)}</div>
               </td>
               <td style={{ padding: '8px' }}>
-                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                  <img
-                    src={`https://img.youtube.com/vi/${match.targetId}/mqdefault.jpg`}
-                    alt="thumbnail"
-                    width={120}
-                  />
-                </div>
+                  <LinkedThumbnailTitle targetId={match.targetId} startTime={match.StartTime}></LinkedThumbnailTitle>
               </td>
               <td style={{ padding: '8px', borderBottom: '1px solid #ddd' }}>
                 <a

@@ -1,5 +1,5 @@
 import ReactMarkdown from "react-markdown";
-import VideoTitle from "../../videoTitle";
+import LinkedThumbnailTitle from "./components/linkedThumbnailTitle";
 
 function VideoSummarizationResult({ results }) {
   // Convert object {"l-YHm...": [...]} into an array of [key, value] pairs
@@ -29,24 +29,7 @@ function VideoSummarizationResult({ results }) {
               <tr key={row.targetId}>
                 {/* LEFT: video info */}
                 <td style={{ padding: 8, verticalAlign: "top", width: 220 }}>
-                  <a
-                    href={`https://www.youtube.com/watch?v=${row.targetId}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <img
-                      src={`https://img.youtube.com/vi/${row.targetId}/mqdefault.jpg`}
-                      alt="thumbnail"
-                      width={200}
-                      style={{ borderRadius: 6 }}
-                    />
-
-                    <div style={{ fontSize: 12, marginTop: 6 }}>
-                        <div style={{ fontSize: 14, fontWeight: "600", marginTop: 8, color: "#333" }}>
-                          <VideoTitle targetId={row.targetId} />
-                        </div>
-                    </div>
-                  </a>
+                  <LinkedThumbnailTitle targetId={row.targetId}></LinkedThumbnailTitle>
                 </td>
 
                 {/* RIGHT: summary */}

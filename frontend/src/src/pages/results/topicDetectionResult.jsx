@@ -1,4 +1,5 @@
 import FormatMMSS from '../../format'
+import LinkedThumbnailTitle from "./components/linkedThumbnailTitle";
 
 function TopicDetectionResult({ results }) {
   const rows = Object.entries(results || {})
@@ -27,22 +28,7 @@ function TopicDetectionResult({ results }) {
             <tr key={row.targetId}>
               {/* LEFT: video info */}
               <td style={{ padding: 8, verticalAlign: "top", width: 220 }}>
-                <img
-                  src={`https://img.youtube.com/vi/${row.targetId}/mqdefault.jpg`}
-                  alt="thumbnail"
-                  width={200}
-                  style={{ borderRadius: 6 }}
-                />
-
-                <div style={{ fontSize: 12, marginTop: 6 }}>
-                  <a
-                    href={`https://www.youtube.com/watch?v=${row.targetId}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    {row.targetId}
-                  </a>
-                </div>
+                  <LinkedThumbnailTitle targetId={row.targetId}></LinkedThumbnailTitle>
               </td>
 
               {/* RIGHT: chapters */}
