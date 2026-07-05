@@ -111,18 +111,21 @@ func (w *Worker) handleJobFailure(ctx context.Context, jobID int, err error) {
 	}
 }
 
-func (w *Worker) writeResultToDb(ctx context.Context, jobID int, resultJSON []byte) error {
+func (w *Worker) setResultAndSuccessStatus(ctx context.Context, jobID int, resultJSON []byte) error {
 
 	_, err := w.db.ExecContext(ctx, `
         UPDATE jobs
-		SET result = $2
+		SET result = $2,
+		status = $3
 		WHERE id = $1
-    `, jobID, resultJSON)
+    `, jobID, resultJSON, StatusSucceeded)
 
 	if err != nil {
 		return fmt.Errorf("Failed to update result for job %d: %v", jobID, err)
 	}
 
+	log.Printf("Job %d completed successfully", jobID)
+	w.succeeded.Inc()
 	return nil
 }
 

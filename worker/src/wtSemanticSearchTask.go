@@ -47,7 +47,7 @@ func (w *Worker) semanticSearch(ctx context.Context, jobId int, videoURL string,
 		return fmt.Errorf("Failed to marshal semantic search result: %w", err)
 	}
 
-	return w.writeResultToDb(ctx, jobId, resultJSON)
+	return w.setResultAndSuccessStatus(ctx, jobId, resultJSON)
 }
 
 func evaluateSearchResults(distances []float32, indices []int64, chunks []chunk) ([]semanticMatch, error) {

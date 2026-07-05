@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/stdlib"
-	"github.com/prometheus/client_golang/prometheus"
 )
 
 const (
@@ -44,7 +43,7 @@ func waitForNotification(ctx context.Context, conn *sql.Conn, timeout time.Durat
 	})
 }
 
-func (w *Worker) executeDBJobs(ctx context.Context, channelNameCommand string, allowedJobTypes []string, handlerMap map[string]JobHandler, successCounter prometheus.Counter, failCounter prometheus.Counter) {
+func (w *Worker) executeDBJobs(ctx context.Context, channelNameCommand string, allowedJobTypes []string, handlerMap map[string]JobHandler) {
 	log.Println("DB worker is running...")
 
 	// Dedicated connection for LISTEN / NOTIFY
@@ -81,7 +80,7 @@ func (w *Worker) executeDBJobs(ctx context.Context, channelNameCommand string, a
 
 			// Drain all available jobs
 			for {
-				JobInfo, err := w.claimNextJob(ctx, allowedJobTypes)
+				jobInfo, err := w.claimNextJob(ctx, allowedJobTypes)
 				if err != nil {
 					if err == sql.ErrNoRows {
 						break // no available work
@@ -90,32 +89,18 @@ func (w *Worker) executeDBJobs(ctx context.Context, channelNameCommand string, a
 					break
 				}
 
-				log.Printf("Claimed job %d of type %s", JobInfo.ID, JobInfo.Type)
+				log.Printf("Claimed job %d of type %s", jobInfo.ID, jobInfo.Type)
 
-				handler, ok := handlerMap[JobInfo.Type]
+				handler, ok := handlerMap[jobInfo.Type]
 				if !ok {
-					log.Printf("Unknown job type %s", JobInfo.Type)
-					w.failJob(ctx, JobInfo.ID, errors.New("unknown job type"), failCounter)
+					log.Printf("Unknown job type %s", jobInfo.Type)
+					w.failJob(ctx, jobInfo.ID, errors.New("unknown job type: "+jobInfo.Type))
 					continue
 				}
 
-				if err := handler(ctx, JobInfo); err != nil {
-					w.failJob(ctx, JobInfo.ID, err, failCounter)
-					continue
+				if err := handler(ctx, jobInfo); err != nil {
+					w.failJob(ctx, jobInfo.ID, err)
 				}
-
-				if _, err := w.db.ExecContext(ctx, `
-					UPDATE jobs
-					SET status = $1
-					WHERE id = $2 AND status = $3
-				`, StatusSucceeded, JobInfo.ID, StatusRunning); err != nil {
-					log.Printf("Failed to set job status to SUCCEEDED for job %d: %v", JobInfo.ID, err)
-					continue
-				}
-
-				log.Printf("Job %d completed successfully", JobInfo.ID)
-
-				successCounter.Inc()
 			}
 		}
 	}
@@ -148,8 +133,8 @@ func (w *Worker) pollPendingJobs(ctx context.Context) {
 	}
 }
 
-func (w *Worker) failJob(ctx context.Context, jobID int, err error, pCounter prometheus.Counter) {
+func (w *Worker) failJob(ctx context.Context, jobID int, err error) {
 	w.handleJobFailure(ctx, jobID, err)
-	pCounter.Inc()
+	w.failed.Inc()
 	log.Printf("Job %d failed: %v", jobID, err)
 }

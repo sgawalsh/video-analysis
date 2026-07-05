@@ -9,10 +9,13 @@ import (
 	"time"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 type Worker struct {
-	db *sql.DB
+	db      *sql.DB
+	succeeded prometheus.Counter
+	failed    prometheus.Counter
 }
 
 func connectPostgres() (*sql.DB, error) {
@@ -64,4 +67,9 @@ func NewWorker() (*Worker, error) {
 	return &Worker{
 		db: db,
 	}, nil
+}
+
+func (w *Worker) SetMetrics(succeededCounter prometheus.Counter, failedCounter prometheus.Counter) {
+	w.succeeded = succeededCounter
+	w.failed = failedCounter
 }

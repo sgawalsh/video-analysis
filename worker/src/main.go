@@ -33,24 +33,6 @@ var (
 	)
 )
 
-var (
-	llmJobsProcessed = prometheus.NewCounter(
-		prometheus.CounterOpts{
-			Name: "llm_worker_jobs_processed_total",
-			Help: "Total llm jobs processed",
-		},
-	)
-)
-
-var (
-	llmJobsFailed = prometheus.NewCounter(
-		prometheus.CounterOpts{
-			Name: "llm_worker_jobs_failed_total",
-			Help: "Total llm jobs failed",
-		},
-	)
-)
-
 type JobHandler func(ctx context.Context, jobInfo JobInfo) error
 
 func main() {
@@ -81,6 +63,7 @@ func main() {
 	case "worker": // Start DB jobs consumer
 		prometheus.MustRegister(jobsProcessed)
 		prometheus.MustRegister(jobsFailed)
+		w.SetMetrics(jobsProcessed, jobsFailed)
 		var handlerMap = map[string]JobHandler{
 			"CHANNEL_SEARCH": func(ctx context.Context, jobInfo JobInfo) error {
 				return w.channelSearch(ctx, jobInfo.ID, jobInfo.TargetID)
@@ -106,12 +89,13 @@ func main() {
 
 		for i := 0; i < concurrency; i++ {
 			wg.Go(func() {
-				w.executeDBJobs(ctx, "LISTEN jobs_available", keysFromMap(handlerMap), handlerMap, jobsProcessed, jobsFailed)
+				w.executeDBJobs(ctx, "LISTEN jobs_available", keysFromMap(handlerMap), handlerMap)
 			})
 		}
 	case "llm_worker": // Start llm jobs consumer
-		prometheus.MustRegister(llmJobsProcessed)
-		prometheus.MustRegister(llmJobsFailed)
+		prometheus.MustRegister(jobsProcessed)
+		prometheus.MustRegister(jobsFailed)
+		w.SetMetrics(jobsProcessed, jobsFailed)
 
 		var handlerMap = map[string]JobHandler{
 			"TOPIC_DETECTION_LLM": func(ctx context.Context, jobInfo JobInfo) error {
@@ -129,7 +113,7 @@ func main() {
 
 		for i := 0; i < concurrency; i++ {
 			wg.Go(func() {
-				w.executeDBJobs(ctx, "LISTEN llm_jobs_available", keysFromMap(handlerMap), handlerMap, llmJobsProcessed, llmJobsFailed)
+				w.executeDBJobs(ctx, "LISTEN llm_jobs_available", keysFromMap(handlerMap), handlerMap)
 			})
 		}
 	default:

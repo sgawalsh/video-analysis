@@ -44,7 +44,7 @@ func (w *Worker) keywordSearch(ctx context.Context, jobId int, videoURL string, 
 		return fmt.Errorf("Failed to marshal keyword search result: %w", err)
 	}
 
-	return w.writeResultToDb(ctx, jobId, resultJSON)
+	return w.setResultAndSuccessStatus(ctx, jobId, resultJSON)
 }
 
 func searchChunksForKeywords(chunks []chunk, keywords []string) ([]keywordMatch, error) {

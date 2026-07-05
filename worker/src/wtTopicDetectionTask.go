@@ -123,5 +123,5 @@ func (w *Worker) topicDetectionLLM(ctx context.Context, jobId int) error {
 		return fmt.Errorf("Failed to marshal topic detection result: %w", err)
 	}
 
-	return w.writeResultToDb(ctx, jobId, resultJSON)
+	return w.setResultAndSuccessStatus(ctx, jobId, resultJSON)
 }
