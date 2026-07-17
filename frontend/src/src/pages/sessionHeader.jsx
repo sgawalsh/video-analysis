@@ -1,4 +1,4 @@
-function SessionHeader({ counts }) {
+function SessionHeader({ counts, errors }) {
   return (
       <div style={{ padding: 20 }}>
         <h2>Job Status</h2>
@@ -16,7 +16,9 @@ function SessionHeader({ counts }) {
               <tr>
                 <td>{counts.total}</td>
                 <td>{counts.succeeded}</td>
-                <td>{counts.failed}</td>
+                <td
+                  title={errors.map(e => `${e.target_id}: ${e.message}`).join('\n')}
+                >{counts.failed}</td>
                 <td>{counts.running}</td>
                 <td>{counts.pending}</td>
               </tr>

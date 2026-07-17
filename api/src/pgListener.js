@@ -1,4 +1,4 @@
-const getSessionJobCounts = require('./sessionsRepository');
+const {getSessionJobCounts} = require('./sessionsRepository');
 async function createPgListener({ pool, hub }) {
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -28,7 +28,7 @@ async function createPgListener({ pool, hub }) {
                 counts,
                 emittedAt: Date.now() // To handle race conditions
               };
-            } else if (rawEvent.n_type === 'job_completed') {
+            } else if (['job_completed', 'job_failed'].includes(rawEvent.n_type)) {
               enrichedEvent = rawEvent
             }else{
               console.warn("Unknown event type:", rawEvent.n_type);

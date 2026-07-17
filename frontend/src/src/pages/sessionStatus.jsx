@@ -72,6 +72,25 @@ function SessionStatus() {
           });
         });
 
+        es.addEventListener('job_failed', (e) => {
+          const event = JSON.parse(e.data);
+          console.log('job_failed fired');
+          setSessionState((prev) => {
+            if (!prev) return prev;
+
+            return {
+              ...prev,
+              error_messages:[
+                ...(prev.error_messages || []),
+                {
+                  target_id: event.target_id,
+                  message: event.error_message,
+                },
+              ]
+            };
+          });
+        });
+
         es.onerror = (err) => {
           console.error("EventSource encountered a connection error:", err);
         };
@@ -92,7 +111,7 @@ function SessionStatus() {
 
   return (
     <>
-      <SessionHeader counts = {sessionState.counts} />
+      <SessionHeader counts = {sessionState.counts} errors={sessionState.error_messages}/>
       <SessionResultRouter jobType={sessionState.type} results={sessionState.results} />
     </>
   );

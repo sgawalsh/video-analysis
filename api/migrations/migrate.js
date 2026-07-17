@@ -114,6 +114,18 @@ async function runMigrations(pool, { enableCron = false } = {}) {
             'result', NEW.result
           )::text
         );
+      
+      ELSIF NEW.status = 'FAILED' THEN
+        PERFORM pg_notify(
+          'session_events',
+          json_build_object(
+            'session_public_id', NEW.session_public_id,
+            'n_type', 'job_failed',
+            'target_id', NEW.target_id,
+            'error_message', NEW.last_error
+          )::text
+        );
+
       END IF;
 
       RETURN NEW;
