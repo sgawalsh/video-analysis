@@ -1,5 +1,5 @@
 import ReactMarkdown from "react-markdown";
-import LinkedThumbnailTitle from "./components/linkedThumbnailTitle";
+import LinkedThumbnailTitle from "../components/linkedThumbnailTitle";
 
 function VideoSummarizationResult({ results }) {
   // Convert object {"l-YHm...": [...]} into an array of [key, value] pairs

@@ -1,5 +1,5 @@
 import FormatMMSS from '../../format'
-import LinkedThumbnailTitle from "./components/linkedThumbnailTitle";
+import LinkedThumbnailTitle from "../components/linkedThumbnailTitle";
 
 function SemanticSearchResult({ results }) {
 

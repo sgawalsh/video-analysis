@@ -14,10 +14,8 @@ function LinkedThumbnailTitle({targetId, startTime=0}){
                 style={{ borderRadius: 6 }}
             />
 
-            <div style={{ fontSize: 12, marginTop: 6 }}>
-                <div style={{ fontSize: 14, fontWeight: "600", marginTop: 8, color: "#333" }}>
-                    <VideoTitle targetId={targetId} />
-                </div>
+            <div style={{ fontSize: 14, fontWeight: "600", marginTop: 8, color: "#333" }}>
+                <VideoTitle targetId={targetId} />
             </div>
         </a>
     );

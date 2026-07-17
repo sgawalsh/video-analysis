@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import SessionHeader from './sessionHeader';
+import SessionHeader from './components/sessionHeader';
 import SessionResultRouter from './results/sessionResultRouter'
 
 function SessionStatus() {
