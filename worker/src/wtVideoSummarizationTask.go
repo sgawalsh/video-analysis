@@ -61,5 +61,5 @@ func (w *Worker) videoSummarizationLLM(ctx context.Context, jobId int) error {
 		return fmt.Errorf("Failed to marshal video summarization result: %w", err)
 	}
 
-	return w.setResultAndSuccessStatus(ctx, jobId, resultJSON)
+	return w.setResultAndSuccessStatusWithLlmInfoDelete(ctx, jobId, resultJSON)
 }

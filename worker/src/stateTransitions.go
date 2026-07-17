@@ -89,7 +89,7 @@ func (w *Worker) claimNextJob(ctx context.Context, jobTypes []string) (JobInfo, 
 	return job, nil
 }
 
-func (w *Worker) handleJobFailure(ctx context.Context, jobID int, err error) {
+func (w *Worker) handleJobFailure(ctx context.Context, jobId int, err error) {
 	var attempts int
 
 	// increment attempts counter and set to pending or failed based on attempts < max_attempts
@@ -104,27 +104,62 @@ func (w *Worker) handleJobFailure(ctx context.Context, jobID int, err error) {
         WHERE id = $1
 		AND status = $6
         RETURNING attempts
-    `, jobID, err.Error(), maxAttempts, StatusFailed, StatusPending, StatusRunning).Scan(&attempts)
+    `, jobId, err.Error(), maxAttempts, StatusFailed, StatusPending, StatusRunning).Scan(&attempts)
 
 	if err2 != nil {
-		log.Printf("Failed to update retry state for job %d: %v", jobID, err2)
+		log.Printf("Failed to update retry state for job %d: %v", jobId, err2)
 	}
 }
 
-func (w *Worker) setResultAndSuccessStatus(ctx context.Context, jobID int, resultJSON []byte) error {
+func (w *Worker) setResultAndSuccessStatus(ctx context.Context, jobId int, resultJSON []byte) error {
 
 	_, err := w.db.ExecContext(ctx, `
         UPDATE jobs
 		SET result = $2,
 		status = $3
 		WHERE id = $1
-    `, jobID, resultJSON, StatusSucceeded)
+    `, jobId, resultJSON, StatusSucceeded)
 
 	if err != nil {
-		return fmt.Errorf("Failed to update result for job %d: %v", jobID, err)
+		return fmt.Errorf("Failed to update result for job %d: %v", jobId, err)
 	}
 
-	log.Printf("Job %d completed successfully", jobID)
+	log.Printf("Job %d completed successfully", jobId)
+	w.succeeded.Inc()
+	return nil
+}
+
+func (w *Worker) setResultAndSuccessStatusWithLlmInfoDelete(ctx context.Context, jobId int, resultJSON []byte) error {
+	tx, err := w.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	_, err = tx.ExecContext(ctx, `
+        UPDATE jobs
+		SET result = $2,
+		status = $3
+		WHERE id = $1
+    `, jobId, resultJSON, StatusSucceeded)
+
+	if err != nil {
+		return fmt.Errorf("Failed to update result for job %d: %v", jobId, err)
+	}
+
+	_, err = tx.ExecContext(ctx, `
+		DELETE FROM llm_job_info
+		WHERE job_id = $1
+	`, jobId)
+	if err != nil {
+		return fmt.Errorf("failed to insert llm job info for job %d: %w", jobId, err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit llm job for job %d: %w", jobId, err)
+	}
+
+	log.Printf("Job %d completed successfully", jobId)
 	w.succeeded.Inc()
 	return nil
 }
