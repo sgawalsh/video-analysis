@@ -209,9 +209,14 @@ async function runMigrations(pool, { enableCron = false } = {}) {
     const schedule = process.env.cron_schedule || '0 * * * *';
     const retention = process.env.cron_job_retention || '1 day';
     const sqlCommand = `
-      DELETE FROM jobs
-      WHERE status = 'SUCCEEDED'
-        AND created_at < NOW() - INTERVAL '${retention}';
+      DELETE FROM sessions s
+        WHERE s.created_at < NOW() - INTERVAL '${retention}'
+        AND NOT EXISTS (
+            SELECT 1
+            FROM jobs j
+            WHERE j.session_id = s.id
+              AND j.status IN ('PENDING', 'RUNNING')
+        );
     `;
 
     // Unschedule existing job (if any)
