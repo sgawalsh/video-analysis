@@ -61,12 +61,12 @@ services:
       role: llm_worker
       llm_concurrency: "${llm_concurrency:-1}"
 
-  model:
-    build: ./model
+  encoder_model:
+    build: ./encoder_model
     expose:
       - "8001"
     volumes:
-      - model-cache:/root/.cache/huggingface
+      - encoder_model_cache:/root/.cache/huggingface
 
   ollama:
     build: ./ollama
@@ -117,5 +117,5 @@ services:
 volumes:
   pgdata:
   grafana-data:
-  model-cache:
+  encoder_model_cache:
   ollama_data:
