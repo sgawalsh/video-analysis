@@ -3,7 +3,7 @@ async function createPgListener({ pool, hub }) {
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
   while (true) {
-    let client;
+    let client, eventPayload;
 
     try {
       client = await pool.connect();
@@ -23,19 +23,19 @@ async function createPgListener({ pool, hub }) {
               const counts = await getSessionJobCounts(pool, rawEvent.session_public_id);
               console.log("Derived counts for session", rawEvent.session_public_id, counts);
               
-              var enrichedEvent = {
+              eventPayload = {
                 ...rawEvent,
                 counts,
                 emittedAt: Date.now() // To handle race conditions
               };
-            } else if (['job_completed', 'job_failed'].includes(rawEvent.n_type)) {
-              enrichedEvent = rawEvent
+            } else if (['job_completed', 'job_failed', 'channel_search_succeeded', 'channel_search_failed'].includes(rawEvent.n_type)) {
+              eventPayload = rawEvent
             }else{
-              console.warn("Unknown event type:", rawEvent.n_type);
+              console.log("Unknown event type:", rawEvent.n_type);
               return;
             }
 
-            hub.broadcast(enrichedEvent.session_public_id, enrichedEvent);
+            hub.broadcast(eventPayload.session_public_id, eventPayload);
           } catch (err) {
             console.error("Error processing PG event payload:", err);
           }

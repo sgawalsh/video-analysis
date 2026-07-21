@@ -80,13 +80,40 @@ function SessionStatus() {
 
             return {
               ...prev,
-              error_messages:[
-                ...(prev.error_messages || []),
+              errorMessages:[
+                ...(prev.errorMessages || []),
                 {
                   target_id: event.target_id,
                   message: event.error_message,
                 },
               ]
+            };
+          });
+        });
+
+        es.addEventListener('channel_search_succeeded', (e) => {
+          const event = JSON.parse(e.data);
+          console.log('channel_search_succeeded fired');
+          setSessionState((prev) => {
+            if (!prev) return prev;
+
+            return {
+              ...prev,
+              channelSearchStatus: 'SUCCEEDED'
+            };
+          });
+        });
+
+        es.addEventListener('channel_search_failed', (e) => {
+          const event = JSON.parse(e.data);
+          console.log('channel_search_failed fired');
+          setSessionState((prev) => {
+            if (!prev) return prev;
+
+            return {
+              ...prev,
+              channelSearchStatus: 'FAILED',
+              channelSearchError: event.error_message
             };
           });
         });
@@ -109,9 +136,16 @@ function SessionStatus() {
 
   if (!sessionState) return <p>Loading…</p>;
 
+  if (('PENDING', 'RUNNING').includes(sessionState.channelSearchStatus)) {
+    return <div>Channel search is active...</div>;
+  }else if (sessionState.channelSearchStatus === 'FAILED') {
+    return <><h3>Channel search failed.</h3>
+    <div>Error Message: {sessionState.channelSearchError}</div></>;
+  }
+
   return (
     <>
-      <SessionHeader counts = {sessionState.counts} errors={sessionState.error_messages}/>
+      <SessionHeader counts = {sessionState.counts} errors={sessionState.errorMessages}/>
       <SessionResultRouter jobType={sessionState.type} results={sessionState.results} />
     </>
   );

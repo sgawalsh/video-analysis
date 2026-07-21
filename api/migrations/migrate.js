@@ -95,36 +95,60 @@ async function runMigrations(pool, { enableCron = false } = {}) {
     CREATE OR REPLACE FUNCTION sse_notifications()
     RETURNS TRIGGER AS $$
     BEGIN
+      IF NEW.type != 'CHANNEL_SEARCH' THEN
 
-      PERFORM pg_notify(
-        'session_events',
-        json_build_object(
-          'session_public_id', NEW.session_public_id,
-          'n_type', 'status_changed'
-        )::text
-      );
-
-      IF NEW.status = 'SUCCEEDED' THEN
         PERFORM pg_notify(
           'session_events',
           json_build_object(
             'session_public_id', NEW.session_public_id,
-            'n_type', 'job_completed',
-            'target_id', NEW.target_id,
-            'result', NEW.result
+            'n_type', 'status_changed'
           )::text
         );
+
+        IF NEW.status = 'SUCCEEDED' THEN
+          PERFORM pg_notify(
+            'session_events',
+            json_build_object(
+              'session_public_id', NEW.session_public_id,
+              'n_type', 'job_completed',
+              'target_id', NEW.target_id,
+              'result', NEW.result
+            )::text
+          );
+        
+        ELSIF NEW.status = 'FAILED' THEN
+          PERFORM pg_notify(
+            'session_events',
+            json_build_object(
+              'session_public_id', NEW.session_public_id,
+              'n_type', 'job_failed',
+              'target_id', NEW.target_id,
+              'error_message', NEW.last_error
+            )::text
+          );
+
+        END IF;
       
-      ELSIF NEW.status = 'FAILED' THEN
-        PERFORM pg_notify(
-          'session_events',
-          json_build_object(
-            'session_public_id', NEW.session_public_id,
-            'n_type', 'job_failed',
-            'target_id', NEW.target_id,
-            'error_message', NEW.last_error
-          )::text
-        );
+      ELSE
+        IF NEW.status = 'SUCCEEDED' THEN
+          PERFORM pg_notify(
+            'session_events',
+            json_build_object(
+              'session_public_id', NEW.session_public_id,
+              'n_type', 'channel_search_succeeded'
+            )::text
+          );
+
+        ELSE
+          PERFORM pg_notify(
+            'session_events',
+            json_build_object(
+              'session_public_id', NEW.session_public_id,
+              'n_type', 'channel_search_failed',
+              'error_message', NEW.last_error
+            )::text
+          );
+        END IF;
 
       END IF;
 
@@ -143,7 +167,7 @@ async function runMigrations(pool, { enableCron = false } = {}) {
         CREATE TRIGGER sse_notifications_trigger
         AFTER UPDATE ON jobs
         FOR EACH ROW
-        WHEN (OLD.status IS DISTINCT FROM NEW.status AND NEW.type IS DISTINCT FROM 'CHANNEL_SEARCH')
+        WHEN (NEW.type IS DISTINCT FROM 'CHANNEL_SEARCH' AND OLD.status IS DISTINCT FROM NEW.status OR NEW.type = 'CHANNEL_SEARCH' and NEW.status IN ('SUCCEEDED', 'FAILED'))
         EXECUTE FUNCTION sse_notifications();
       END IF;
     END

@@ -1,6 +1,6 @@
 const express = require('express');
 const jobFailures = require('../metrics');
-const {getSessionJobCounts, getSessionErrors} = require('../sessionsRepository');
+const {getSessionJobCounts, getSessionErrors, getChannelSearchStatus, getSessionType, getSessionResults} = require('../sessionsRepository');
 
 function sessionRoutes({ pool, hub }) {
     const router = express.Router();
@@ -55,12 +55,14 @@ function sessionRoutes({ pool, hub }) {
             const counts = await getSessionJobCounts(pool, public_id);
             const results = await getSessionResults(pool, public_id);
             const errorMessages = await getSessionErrors(pool, public_id);
+            const channelSearchStatus = await getChannelSearchStatus(pool, public_id);
 
             res.json({
                 type: sessionType,
-                counts: counts,
-                results: results,
-                error_messages: errorMessages
+                counts,
+                results,
+                error_messages: errorMessages,
+                channelSearchStatus
             });
 
         } catch (err) {
@@ -99,36 +101,6 @@ function sessionRoutes({ pool, hub }) {
     });
 
     return router;
-}
-
-async function getSessionType(pool, public_id){
-    const result = await pool.query(
-        `
-        SELECT type FROM sessions WHERE public_id = $1
-        `,
-        [public_id]
-    );
-    if (result.rowCount === 0) {
-        throw new Error("Session not found");
-    }
-    return result.rows[0].type;
-}
-
-async function getSessionResults(pool, public_id){
-    const result = await pool.query(
-        `
-        SELECT target_id, result FROM jobs WHERE session_public_id = $1 AND status = 'SUCCEEDED' AND type != 'CHANNEL_SEARCH'
-        `,
-        [public_id]
-    );
-    return result.rows.reduce((acc, row) => {
-        acc[row.target_id] = (row.result ?? []).map(item => ({
-            ...item,
-            target_id: row.target_id,
-        }));
-
-        return acc;
-    }, {});
 }
 
 async function singleVideoFlow(res, pool, type, videoURL, searchTerm) {

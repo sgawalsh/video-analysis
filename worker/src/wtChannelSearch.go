@@ -83,7 +83,7 @@ func (w *Worker) channelSearch(ctx context.Context, jobId int, channelID string)
 	// fmt.Printf("video ids:\n%s\n", idsBytes)
 	fmt.Printf("Inserted %d/%d videos\n", successCount, len(toInsert))
 
-	return nil
+	return w.setResultAndSuccessStatus(ctx, jobId, []byte("[]"))
 }
 
 // finds the index range of videos uploaded between startDate and endDate (inclusive).
