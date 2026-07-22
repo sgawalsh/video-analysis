@@ -64,17 +64,16 @@ services:
   encoder_model:
     build: ./encoder_model
     expose:
-      - "8001"
+      - "8000"
     volumes:
-      - encoder_model_cache:/root/.cache/huggingface
+      - encoder_model_data:/root/.cache/huggingface
 
-  ollama:
-    build: ./ollama
-    container_name: ollama_cpu
+  llm_model:
+    build: ./llm_model
     expose:
       - "11434:11434"
     volumes:
-      - ollama_data:/root/.ollama
+      - llm_model_data:/root/.ollama
     cpus: "4.0" # Restrict CPU resources so website stays responsive
     mem_limit: 4g
 
@@ -117,5 +116,5 @@ services:
 volumes:
   pgdata:
   grafana-data:
-  encoder_model_cache:
-  ollama_data:
+  encoder_model_data:
+  llm_model_data:

@@ -86,7 +86,7 @@ func evaluateSearchResults(distances []float32, indices []int64, chunks []chunk)
 }
 
 func searchChunksForQuery(chunks []chunk, query string) ([]float32, []int64, error) {
-	embedder := NewClient("http://model:8001")
+	embedder := NewClient("http://encoder_model:8000")
 	var texts []string
 	for _, item := range chunks {
 		texts = append(texts, strings.Join(item.Text, " "))
