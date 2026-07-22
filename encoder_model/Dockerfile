@@ -8,4 +8,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY src/ .
 
-CMD ["uvicorn", "model:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "encoder_model:app", "--host", "0.0.0.0", "--port", "8000"]

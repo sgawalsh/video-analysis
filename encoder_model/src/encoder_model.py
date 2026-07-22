@@ -7,10 +7,13 @@ import requests # type: ignore
 app = FastAPI()
 
 model = SentenceTransformer("BAAI/bge-small-en-v1.5")
-ollamaUrl = "http://ollama:11434/api/generate"
 
 prefix = "Represent this sentence for searching relevant passages: "
 windowSize = 2
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
 
 @app.post("/embedAndSearch")
 def embedAndSearch(payload: dict):
@@ -91,17 +94,3 @@ def embeddingsToWindowEmbeddings(embeddings):
         windowEmbeddings.append(avgEmbedding)
 
     return np.array(windowEmbeddings)
-
-def generate_section_title(transcript_chunk: str) -> str:
-    
-    system_prompt = "You are an expert video editor. Analyze the following video transcript segment and generate exactly ONE informative, concise title (under 7 words) that accurately describes the topic covered. Return only the title. Do not include quotes, pleasantries, or explanations."
-    
-    payload = {
-        "model": "llama3", # Or mistral, phi3, etc.
-        "prompt": f"{system_prompt}\n\nTranscript Segment:\n{transcript_chunk}",
-        "stream": False
-    }
-    
-    response = requests.post(ollamaUrl, json=payload)
-    result = response.json()
-    return result.get("response", "").strip()
