@@ -39,7 +39,7 @@ async function getChannelSearchStatus(pool, public_id){
         [public_id]
     );
 
-    return result.rows[0].status;
+    return result.rows.length > 0 ? result.rows[0].status : null; // If no results are found, assume single video job
 }
 
 async function getSessionType(pool, public_id){

@@ -61,7 +61,7 @@ function sessionRoutes({ pool, hub }) {
                 type: sessionType,
                 counts,
                 results,
-                error_messages: errorMessages,
+                errorMessages,
                 channelSearchStatus
             });
 

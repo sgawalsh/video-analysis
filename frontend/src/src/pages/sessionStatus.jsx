@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import SessionHeader from './components/sessionHeader';
 import SessionResultRouter from './results/sessionResultRouter'
 
@@ -7,6 +7,7 @@ function SessionStatus() {
   const { id } = useParams();
   const [sessionState, setSessionState] = useState(null);
   const latestEmittedAt = useRef(0);
+  const navigate = useNavigate();
 
   useEffect(() => {
     let es;
@@ -14,6 +15,16 @@ function SessionStatus() {
     async function loadSession() {
       try {
         const res = await fetch(`/api/sessions/${id}`);
+
+        if (res.status === 404) {
+          navigate('/*', { replace: true });
+          return;
+        }
+
+        if (!res.ok) {
+          navigate('/error', { replace: true });
+          return;
+        }
         const data = await res.json();
 
         setSessionState(data);
@@ -136,7 +147,7 @@ function SessionStatus() {
 
   if (!sessionState) return <p>Loading…</p>;
 
-  if (('PENDING', 'RUNNING').includes(sessionState.channelSearchStatus)) {
+  if (['PENDING', 'RUNNING'].includes(sessionState.channelSearchStatus)) {
     return <div>Channel search is active...</div>;
   }else if (sessionState.channelSearchStatus === 'FAILED') {
     return <><h3>Channel search failed.</h3>
