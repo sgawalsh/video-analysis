@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: poller
-          image: sgawalsh/postgres-notifications-worker:latest
+          image: sgawalsh/video-analysis-worker:latest
           env:
             - name: role
               value: poller

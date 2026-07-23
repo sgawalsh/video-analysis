@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: llm_sidecar
+  namespace: app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: llm_sidecar
+  template:
+    metadata:
+      labels:
+        app: llm_sidecar
+    spec:
+      containers:
+      - name: llm_model
+        image: sgawalsh/llm_model:latest
+
+        ports:
+        - containerPort: 11434
+
+        resources:
+          requests:
+            cpu: 2
+            memory: 4Gi
+
+          limits:
+              cpu: 4
+              memory: 8Gi
+        startupProbe:
+          httpGet:
+            path: /
+            port: 11434
+          periodSeconds: 5
+          failureThreshold: 30
+
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 11434
+          periodSeconds: 5
+      - name: llm_worker
+        image: sgawalsh/video-analysis-worker:latest
+        ports:
+          - name: metrics
+            containerPort: 2112
+        env:
+          - name: role
+            value: llm_worker
+          - name: llm_concurrency
+            value: "1"
+        envFrom:
+          - configMapRef:
+              name: postgres-config
+          - configMapRef:
+              name: llm-worker-config
+          - secretRef:
+              name: postgres-secret

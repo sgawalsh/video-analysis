@@ -1,33 +1,33 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: worker
+  name: llm_worker
   namespace: app
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: worker
+      app: llm_worker
   template:
     metadata:
       labels:
-        app: worker
+        app: llm_worker
     spec:
       containers:
-        - name: worker
+        - name: llm_worker
           image: sgawalsh/video-analysis-worker:latest
           ports:
             - name: metrics
               containerPort: 2112
           env:
             - name: role
-              value: worker
-            - name: worker_concurrency
-              value: "3"
+              value: llm_worker
+            - name: llm_concurrency
+              value: "1"
           envFrom:
             - configMapRef:
                 name: postgres-config
             - configMapRef:
-                name: worker-config
+                name: llm-worker-config
             - secretRef:
                 name: postgres-secret

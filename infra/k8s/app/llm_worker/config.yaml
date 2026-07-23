@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: llm-worker-config
+  namespace: app
+data:
+  worker_concurrency: "1"
+  worker_execution_timeout_interval: "5"
+  worker_max_job_retries: "3"

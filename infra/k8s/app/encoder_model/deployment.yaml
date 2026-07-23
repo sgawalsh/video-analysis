@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: encoder_model
+  namespace: app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: encoder_model
+  template:
+    metadata:
+      labels:
+        app: encoder_model
+    spec:
+      containers:
+      - name: encoder_model
+        image: sgawalsh/encoder_model:latest
+
+        ports:
+        - containerPort: 8000
+
+        resources:
+          requests:
+            cpu: "500m"
+            memory: "2Gi"
+          limits:
+            cpu: "2"
+            memory: "4Gi"
+
+        startupProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          periodSeconds: 5
+          failureThreshold: 30
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          periodSeconds: 60

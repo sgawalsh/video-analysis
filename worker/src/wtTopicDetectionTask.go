@@ -8,8 +8,6 @@ import (
 	"strings"
 )
 
-const ollamaUrl = "http://ollama:11434/api/generate"
-
 type ChapterText struct {
 	Text      string
 	StartTime int64
@@ -46,7 +44,7 @@ func (w *Worker) topicDetectionEmbed(ctx context.Context, jobId int, videoURL st
 		return err
 	}
 
-	embedder := NewClient("http://model:8001")
+	embedder := NewClient("http://encoder_model:8000")
 	var texts []string
 	for _, chunk := range myChunks {
 		texts = append(texts, strings.Join(chunk.Text, " "))

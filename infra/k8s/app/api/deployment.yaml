@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: api
-          image: sgawalsh/postgres-notifications-api:latest
+          image: sgawalsh/video-analysis-api:latest
           ports:
             - name: http
               containerPort: 8080

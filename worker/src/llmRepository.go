@@ -43,7 +43,7 @@ func (w *Worker) generateWithOllama(
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodPost,
-		ollamaUrl,
+		"http://llm_model:11434/api/generate",
 		bytes.NewBuffer(jsonData),
 	)
 	if err != nil {

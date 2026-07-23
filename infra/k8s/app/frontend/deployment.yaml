@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: sgawalsh/frontend:latest
+          image: sgawalsh/video-analysis-frontend:latest
           ports:
             - name: http
               containerPort: 80
