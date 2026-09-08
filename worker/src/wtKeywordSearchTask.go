@@ -18,7 +18,7 @@ func (w *Worker) keywordSearch(ctx context.Context, jobId int, videoURL string, 
 
 	// fmt.Printf("trying keyword search with %s, %s\n", videoURL, query)
 
-	tempDir, subFiles, err := getSubs(videoURL)
+	tempDir, subFiles, title, err := getSubs(videoURL)
 	if err != nil {
 		return err
 	}
@@ -44,26 +44,27 @@ func (w *Worker) keywordSearch(ctx context.Context, jobId int, videoURL string, 
 		return fmt.Errorf("Failed to marshal keyword search result: %w", err)
 	}
 
-	return w.setResultAndSuccessStatus(ctx, jobId, resultJSON)
+	return w.setResultAndSuccessStatus(ctx, jobId, title, resultJSON)
 }
 
 func searchChunksForKeywords(chunks []chunk, keywords []string) ([]keywordMatch, error) {
 	keywordMatches := make([]keywordMatch, 0)
-	var matchCount int
 
 	for _, chunk := range chunks {
 		joined := strings.ToLower(strings.Join(chunk.Text, " "))
-		matchCount = 0
+		matchCount := 0
 
 		for _, keyword := range keywords {
-			if containsPhrase(strings.Fields(joined), strings.Fields(keyword)) {
-				matchCount++
-			}
+			matchCount += countPhrase(
+				strings.Fields(joined),
+				strings.Fields(strings.ToLower(keyword)),
+			)
 		}
+
 		if matchCount > 0 {
 			keywordMatches = append(keywordMatches, keywordMatch{
 				MatchCount: matchCount,
-				StartTime:  chunk.StartTime / 1000, //convert to seconds
+				StartTime:  chunk.StartTime / 1000,
 			})
 		}
 	}
@@ -71,20 +72,29 @@ func searchChunksForKeywords(chunks []chunk, keywords []string) ([]keywordMatch,
 	return keywordMatches, nil
 }
 
-func containsPhrase(tokens []string, phrase []string) bool {
+func countPhrase(tokens []string, phrase []string) int {
+	if len(phrase) == 0 || len(tokens) < len(phrase) {
+		return 0
+	}
+
+	count := 0
+
 	for i := 0; i <= len(tokens)-len(phrase); i++ {
 		match := true
+
 		for j := range phrase {
 			if tokens[i+j] != phrase[j] {
 				match = false
 				break
 			}
 		}
+
 		if match {
-			return true
+			count++
 		}
 	}
-	return false
+
+	return count
 }
 
 func parseQuery(query string) []string {
