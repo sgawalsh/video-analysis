@@ -3,11 +3,13 @@ import LinkedThumbnailTitle from "../components/linkedThumbnailTitle";
 
 function KeywordSearchResult({ results }) {
 
-  const allMatches = Object.entries(results)
-    .flatMap(([targetId, matches]) =>
-      matches.map(m => ({ ...m, targetId }))
-    )
-    .sort((a, b) => b.MatchCount - a.MatchCount);
+  const rows = Object.entries(results).flatMap(([id, content]) => {
+    return content.data.map(item => ({
+      targetId: id,
+      title: content.title,
+      ...item
+    }));
+  }).sort((a, b) => b.MatchCount - a.MatchCount);
 
   return (
     <div style={{ padding: 20 }}>
@@ -31,24 +33,24 @@ function KeywordSearchResult({ results }) {
         </thead>
 
         <tbody>
-          {allMatches.map((match, rank) => (
-            <tr key={`${match.targetId}-${match.StartTime}`}>
+          {rows.map((row, rank) => (
+            <tr key={`${row.targetId}-${row.StartTime}`}>
               <td style={{ padding: '8px' }}>
                 #{rank + 1}
               </td>
               <td>
-                <div>{match.MatchCount}</div>
+                <div>{row.MatchCount}</div>
               </td>
               <td style={{ padding: '8px' }}>
-                  <LinkedThumbnailTitle targetId={match.targetId} startTime={match.StartTime}></LinkedThumbnailTitle>
+                  <LinkedThumbnailTitle title={row.title} targetId={row.targetId} startTime={row.StartTime}></LinkedThumbnailTitle>
               </td>
               <td style={{ padding: '8px', borderBottom: '1px solid #ddd' }}>
                 <a
-                  href={`https://www.youtube.com/watch?v=${match.targetId}&t=${match.StartTime}`}
+                  href={`https://www.youtube.com/watch?v=${row.targetId}&t=${row.StartTime}`}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  Link - {FormatMMSS(match.StartTime)}s
+                  Link - {FormatMMSS(row.StartTime)}s
                 </a>
               </td>
             </tr>

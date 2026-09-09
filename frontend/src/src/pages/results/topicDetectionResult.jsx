@@ -2,12 +2,14 @@ import FormatMMSS from '../../format'
 import LinkedThumbnailTitle from "../components/linkedThumbnailTitle";
 
 function TopicDetectionResult({ results }) {
-  const rows = Object.entries(results || {})
-      .map(([targetId, topics]) => ({
-        targetId,
-        topics
-      }))
-      .sort((a, b) => a.targetId.localeCompare(b.targetId));
+
+  const rows = Object.entries(results || {}).flatMap(([id, content]) =>
+    ({
+      targetId: id,
+      title: content.title,
+      topics: content.data
+    })
+  )
 
   return (
     <div style={{ padding: 20 }}>
@@ -28,7 +30,7 @@ function TopicDetectionResult({ results }) {
             <tr key={row.targetId}>
               {/* LEFT: video info */}
               <td style={{ padding: 8, verticalAlign: "top", width: 220 }}>
-                  <LinkedThumbnailTitle targetId={row.targetId}></LinkedThumbnailTitle>
+                  <LinkedThumbnailTitle title={row.title} targetId={row.targetId}></LinkedThumbnailTitle>
               </td>
 
               {/* RIGHT: chapters */}

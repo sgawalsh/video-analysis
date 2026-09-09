@@ -15,7 +15,7 @@ type SummaryResult struct {
 }
 
 func (w *Worker) videoSummarizationTranscribe(ctx context.Context, jobId int, videoURL string) error {
-	tempDir, subFiles, err := getSubs(videoURL)
+	tempDir, subFiles, title, err := getSubs(videoURL)
 	if err != nil {
 		return err
 	}
@@ -31,10 +31,10 @@ func (w *Worker) videoSummarizationTranscribe(ctx context.Context, jobId int, vi
 
 	log.Printf("Writing transcript: %s", strings.Join(myChunks[0].Text, " "))
 
-	return w.createLlmJob(ctx, jobId, jobTypeVideoSummarizationLLM, resultJSON)
+	return w.createLlmJob(ctx, jobId, jobTypeVideoSummarizationLLM, title, resultJSON)
 }
 
-func (w *Worker) videoSummarizationLLM(ctx context.Context, jobId int) error {
+func (w *Worker) videoSummarizationLLM(ctx context.Context, jobId int, title string) error {
 
 	input, err := w.getLlmJobInfo(ctx, jobId)
 	if err != nil {
@@ -47,7 +47,8 @@ func (w *Worker) videoSummarizationLLM(ctx context.Context, jobId int) error {
 	}
 
 	prompt := fmt.Sprintf(
-		"Write a summary (under 100 words) for this video transcription. Respond with just the summary, do not include introductory words or punctuation.\nTranscription: %s",
+		"Write a summary (under 100 words) for the following video transcription. Respond with just the summary, do not include introductory words or punctuation.\nVideo Title: %s\nTranscription: %s",
+		title,
 		transcription,
 	)
 

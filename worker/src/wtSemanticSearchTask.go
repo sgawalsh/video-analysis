@@ -16,9 +16,7 @@ type semanticMatch struct {
 
 func (w *Worker) semanticSearch(ctx context.Context, jobId int, videoURL string, query string) error {
 
-	// fmt.Printf("trying semantic search with %s, %s\n", videoURL, query)
-
-	tempDir, subFiles, err := getSubs(videoURL)
+	tempDir, subFiles, title, err := getSubs(videoURL)
 	if err != nil {
 		return err
 	}
@@ -47,7 +45,7 @@ func (w *Worker) semanticSearch(ctx context.Context, jobId int, videoURL string,
 		return fmt.Errorf("Failed to marshal semantic search result: %w", err)
 	}
 
-	return w.setResultAndSuccessStatus(ctx, jobId, resultJSON)
+	return w.setResultAndSuccessStatus(ctx, jobId, title, resultJSON)
 }
 
 func evaluateSearchResults(distances []float32, indices []int64, chunks []chunk) ([]semanticMatch, error) {

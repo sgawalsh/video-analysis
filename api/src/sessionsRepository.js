@@ -58,15 +58,16 @@ async function getSessionType(pool, public_id){
 async function getSessionResults(pool, public_id){
     const result = await pool.query(
         `
-        SELECT target_id, result FROM jobs WHERE session_public_id = $1 AND status = 'SUCCEEDED' AND type != 'CHANNEL_SEARCH'
+        SELECT target_id, title, result FROM jobs WHERE session_public_id = $1 AND status = 'SUCCEEDED' AND type != 'CHANNEL_SEARCH'
         `,
         [public_id]
     );
+
     return result.rows.reduce((acc, row) => {
-        acc[row.target_id] = (row.result ?? []).map(item => ({
-            ...item,
-            target_id: row.target_id,
-        }));
+        acc[row.target_id] = {
+            title: row.title,
+            data: row.result ?? []
+        };
 
         return acc;
     }, {});

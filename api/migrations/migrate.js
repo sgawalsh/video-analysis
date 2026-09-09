@@ -55,6 +55,7 @@ async function runMigrations(pool, { enableCron = false } = {}) {
       status job_status NOT NULL DEFAULT 'PENDING',
       target_id TEXT NOT NULL,
       query TEXT,
+      title TEXT,
       result JSONB NOT NULL DEFAULT '[]'::jsonb,
 
       created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -112,6 +113,7 @@ async function runMigrations(pool, { enableCron = false } = {}) {
               'session_public_id', NEW.session_public_id,
               'n_type', 'job_completed',
               'target_id', NEW.target_id,
+              'title', NEW.title,
               'result', NEW.result
             )::text
           );

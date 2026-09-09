@@ -99,10 +99,10 @@ func main() {
 
 		var handlerMap = map[string]JobHandler{
 			"TOPIC_DETECTION_LLM": func(ctx context.Context, jobInfo JobInfo) error {
-				return w.topicDetectionLLM(ctx, jobInfo.ID)
+				return w.topicDetectionLLM(ctx, jobInfo.ID, jobInfo.Title.String)
 			},
 			"VIDEO_SUMMARIZATION_LLM": func(ctx context.Context, jobInfo JobInfo) error {
-				return w.videoSummarizationLLM(ctx, jobInfo.ID)
+				return w.videoSummarizationLLM(ctx, jobInfo.ID, jobInfo.Title.String)
 			},
 		}
 

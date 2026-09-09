@@ -1,6 +1,4 @@
-import VideoTitle from "./videoTitle";
-
-function LinkedThumbnailTitle({targetId, startTime=0}){
+function LinkedThumbnailTitle({title, targetId, startTime=0}){
     return(
         <a
             href={`https://www.youtube.com/watch?v=${targetId}&t=${startTime}`}
@@ -15,7 +13,7 @@ function LinkedThumbnailTitle({targetId, startTime=0}){
             />
 
             <div style={{ fontSize: 14, fontWeight: "600", marginTop: 8, color: "#333" }}>
-                <VideoTitle targetId={targetId} />
+                {title}
             </div>
         </a>
     );

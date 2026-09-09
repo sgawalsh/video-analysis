@@ -32,7 +32,7 @@ type OllamaResponse struct {
 func (w *Worker) topicDetectionEmbed(ctx context.Context, jobId int, videoURL string) error {
 	// get subs, chunks, embeddings, compare via cosine similarity, break into chapters, identify topic for each chunk set, return results
 
-	tempDir, subFiles, err := getSubs(videoURL)
+	tempDir, subFiles, title, err := getSubs(videoURL)
 	if err != nil {
 		return err
 	}
@@ -78,10 +78,10 @@ func (w *Worker) topicDetectionEmbed(ctx context.Context, jobId int, videoURL st
 
 	// fmt.Printf("writing: %v\n", string(resultJSON))
 
-	return w.createLlmJob(ctx, jobId, jobTypeTopicDetectionLLM, resultJSON)
+	return w.createLlmJob(ctx, jobId, jobTypeTopicDetectionLLM, title, resultJSON)
 }
 
-func (w *Worker) topicDetectionLLM(ctx context.Context, jobId int) error {
+func (w *Worker) topicDetectionLLM(ctx context.Context, jobId int, title string) error {
 	inputJson, err := w.getLlmJobInfo(ctx, jobId)
 	if err != nil {
 		return err
@@ -100,7 +100,8 @@ func (w *Worker) topicDetectionLLM(ctx context.Context, jobId int) error {
 		}
 
 		prompt := fmt.Sprintf(
-			"Write a short, descriptive video chapter title (under 7 words) for this video transcript segment. Respond with just the title, do not include introductory words or punctuation. Text: %s",
+			"Write a short, descriptive video chapter title (under 7 words) for the following video transcript segment. Respond with just the chapter title, do not include introductory words or punctuation.\nVideo Title: %s\nTranscript: %s",
+			title,
 			strings.Join(words, " "),
 		)
 

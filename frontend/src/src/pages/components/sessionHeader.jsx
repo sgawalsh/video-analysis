@@ -86,7 +86,7 @@ function SessionHeader({ counts, errors }) {
                             >
                               <div>
                                 <span>
-                                  <strong><VideoTitle targetId={e.target_id} /></strong> - {e.message}
+                                  <strong>{e.target_id}</strong> - <VideoTitle targetId={e.target_id} /> - {e.message}
                                 </span>
                               </div>
                             </div>

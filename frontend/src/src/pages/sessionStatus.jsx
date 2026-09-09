@@ -62,25 +62,18 @@ function SessionStatus() {
           setSessionState((prev) => {
             if (!prev) return prev;
 
-            const targetId = event.target_id;
-
-            const incoming = (event.result ?? []).map(item => ({
-              ...item,
-              target_id: targetId,
-            }));
-          console.log('incoming: ', incoming)
-
             return {
               ...prev,
               results: {
                 ...(prev.results || {}),
-                [targetId]: [
-                  ...((prev.results || {})[targetId] || []),
-                  ...incoming
-                ]
+                [event.target_id]: {
+                  title: event.title,
+                  data: event.result
+                }
               }
             };
           });
+          console.log("New state: ", sessionState)
         });
 
         es.addEventListener('job_failed', (e) => {
@@ -95,6 +88,7 @@ function SessionStatus() {
                 ...(prev.errorMessages || []),
                 {
                   target_id: event.target_id,
+                  title: event.title,
                   message: event.error_message,
                 },
               ]

@@ -2,11 +2,13 @@ import ReactMarkdown from "react-markdown";
 import LinkedThumbnailTitle from "../components/linkedThumbnailTitle";
 
 function VideoSummarizationResult({ results }) {
-  // Convert object {"l-YHm...": [...]} into an array of [key, value] pairs
-  const videoEntries = Object.entries(results || {}).map(([targetId, summary]) => ({
-        targetId,
-        summary
-      }));
+  const rows = Object.entries(results || {}).flatMap(([id, content]) =>
+    ({
+      targetId: id,
+      title: content.title,
+      summary: content.data[0].Text
+    })
+  )
 
   return (
     <div style={{ padding: 20 }}>
@@ -23,20 +25,20 @@ function VideoSummarizationResult({ results }) {
         </thead>
 
         <tbody>
-          {videoEntries.map((row) => {
+          {rows.map((row) => {
 
             return (
               <tr key={row.targetId}>
                 {/* LEFT: video info */}
                 <td style={{ padding: 8, verticalAlign: "top", width: 220 }}>
-                  <LinkedThumbnailTitle targetId={row.targetId}></LinkedThumbnailTitle>
+                  <LinkedThumbnailTitle title={row.title} targetId={row.targetId}></LinkedThumbnailTitle>
                 </td>
 
                 {/* RIGHT: summary */}
                 <td style={{ padding: 8, verticalAlign: "top" }}>
                   <div style={{ marginBottom: 4, textAlign: "left" }}>
                     <ReactMarkdown>
-                      {row.summary[0].Text || { Text: "" }.replace(/^"|"$/g, "")}
+                      {row.summary || { Text: "" }.replace(/^"|"$/g, "")}
                     </ReactMarkdown>
                   </div>
                   

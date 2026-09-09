@@ -27,18 +27,34 @@ type wordIndexTime struct {
 	timeStamp int64
 }
 
-func getSubs(videoURL string) (string, []string, error) {
+func getSubs(videoURL string) (string, []string, string, error) {
 	tempDir, err := os.MkdirTemp("", "subs-*")
-
 	if err != nil {
-		return "", nil, err
+		return "", nil, "", err
 	}
 
+	// Get video title
+	titleCmd := exec.Command(
+		"yt-dlp",
+		"--print", "%(title)s",
+		"--skip-download",
+		videoURL,
+	)
+
+	titleOutput, err := titleCmd.Output()
+	if err != nil {
+		return "", nil, "", err
+	}
+
+	title := strings.TrimSpace(string(titleOutput))
+
+	// Download subtitles
 	outputTemplate := filepath.Join(
 		tempDir,
 		"%(id)s.%(ext)s",
 	)
-	cmd := exec.Command(
+
+	subCmd := exec.Command(
 		"yt-dlp",
 		"--write-auto-sub",
 		"--skip-download",
@@ -47,25 +63,24 @@ func getSubs(videoURL string) (string, []string, error) {
 		"--output", outputTemplate,
 		videoURL,
 	)
-	_, err = cmd.CombinedOutput()
 
+	_, err = subCmd.CombinedOutput()
 	if err != nil {
-		return "", nil, err
+		return "", nil, "", err
 	}
 
 	files, err := filepath.Glob(
 		filepath.Join(tempDir, "*.vtt"),
 	)
-
 	if err != nil {
-		return "", nil, err
+		return "", nil, "", err
 	}
 
 	if len(files) == 0 {
-		return "", nil, fmt.Errorf("no transcript found")
+		return "", nil, "", fmt.Errorf("no transcript found")
 	}
 
-	return tempDir, files, nil
+	return tempDir, files, title, nil
 }
 
 func isHyphen(f string) bool {

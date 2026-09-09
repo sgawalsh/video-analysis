@@ -3,11 +3,13 @@ import LinkedThumbnailTitle from "../components/linkedThumbnailTitle";
 
 function SemanticSearchResult({ results }) {
 
-  const allMatches = Object.entries(results)
-    .flatMap(([targetId, matches]) =>
-      matches.map(m => ({ ...m, targetId }))
-    )
-    .sort((a, b) => b.Distance - a.Distance);
+  const rows = Object.entries(results).flatMap(([id, content]) => {
+    return content.data.map(item => ({
+      targetId: id,
+      title: content.title,
+      ...item
+    }));
+  }).sort((a, b) => b.Distance - a.Distance);
 
   return (
     <div style={{ padding: 20 }}>
@@ -31,8 +33,8 @@ function SemanticSearchResult({ results }) {
         </thead>
 
         <tbody>
-          {allMatches.map((match, rank) => (
-            <tr key={`${match.targetId}-${match.Index}`}>
+          {rows.map((row, rank) => (
+            <tr key={`${row.targetId}-${row.Index}`}>
               <td style={{ padding: '8px' }}>
                 #{rank + 1}
               </td>
@@ -47,24 +49,24 @@ function SemanticSearchResult({ results }) {
                 >
                   <div
                     style={{
-                      width: `${match.Distance * 100}%`,
+                      width: `${row.Distance * 100}%`,
                       height: '100%',
                       background: '#4caf50'
                     }}
                   />
                 </div>
-                <div>{match.Distance.toFixed(3)}</div>
+                <div>{row.Distance.toFixed(3)}</div>
               </td>
               <td style={{ padding: '8px' }}>
-                  <LinkedThumbnailTitle targetId={match.targetId} startTime={match.StartTime}></LinkedThumbnailTitle>
+                  <LinkedThumbnailTitle title={row.title} targetId={row.targetId} startTime={row.StartTime}></LinkedThumbnailTitle>
               </td>
               <td style={{ padding: '8px', borderBottom: '1px solid #ddd' }}>
                 <a
-                  href={`https://www.youtube.com/watch?v=${match.targetId}&t=${match.StartTime}`}
+                  href={`https://www.youtube.com/watch?v=${row.targetId}&t=${row.StartTime}`}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  Link - {FormatMMSS(match.StartTime)}s
+                  Link - {FormatMMSS(row.StartTime)}s
                 </a>
               </td>
             </tr>

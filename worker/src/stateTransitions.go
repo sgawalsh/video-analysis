@@ -74,11 +74,12 @@ func (w *Worker) claimNextJob(ctx context.Context, jobTypes []string) (JobInfo, 
 			FOR UPDATE SKIP LOCKED
 			LIMIT 1
 		)
-		RETURNING id, type, target_id, query
+		RETURNING id, target_id, title, type, query
 	`, StatusRunning, StatusPending, pq.Array(jobTypes)).Scan(
 		&job.ID,
-		&job.Type,
 		&job.TargetID,
+		&job.Title,
+		&job.Type,
 		&job.Query,
 	)
 
@@ -111,14 +112,15 @@ func (w *Worker) handleJobFailure(ctx context.Context, jobId int, err error) {
 	}
 }
 
-func (w *Worker) setResultAndSuccessStatus(ctx context.Context, jobId int, resultJSON []byte) error {
+func (w *Worker) setResultAndSuccessStatus(ctx context.Context, jobId int, title string, resultJSON []byte) error {
 
 	_, err := w.db.ExecContext(ctx, `
         UPDATE jobs
-		SET result = $2,
-		status = $3
+		SET title = $2,
+		result = $3,
+		status = $4
 		WHERE id = $1
-    `, jobId, resultJSON, StatusSucceeded)
+    `, jobId, title, resultJSON, StatusSucceeded)
 
 	if err != nil {
 		return fmt.Errorf("Failed to update result for job %d: %v", jobId, err)
@@ -164,7 +166,7 @@ func (w *Worker) setResultAndSuccessStatusWithLlmInfoDelete(ctx context.Context,
 	return nil
 }
 
-func (w *Worker) createLlmJob(ctx context.Context, jobId int, newType JobType, inputJSON []byte) error {
+func (w *Worker) createLlmJob(ctx context.Context, jobId int, newType JobType, title string, inputJSON []byte) error {
 	tx, err := w.db.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
@@ -173,9 +175,9 @@ func (w *Worker) createLlmJob(ctx context.Context, jobId int, newType JobType, i
 
 	_, err = tx.ExecContext(ctx, `
 		UPDATE jobs
-		SET type = $1, status = $2
-		WHERE id = $3
-	`, newType, StatusPending, jobId)
+		SET type = $2, title = $3, status = $4
+		WHERE id = $1
+	`, jobId, newType, title, StatusPending)
 	if err != nil {
 		return fmt.Errorf("failed to update job %d: %w", jobId, err)
 	}

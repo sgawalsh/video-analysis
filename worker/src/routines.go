@@ -21,8 +21,9 @@ const (
 
 type JobInfo struct {
 	ID       int
-	Type     string
 	TargetID string
+	Title    sql.NullString
+	Type     string
 	Query    sql.NullString
 }
 
