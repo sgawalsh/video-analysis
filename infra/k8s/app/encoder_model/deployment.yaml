@@ -1,21 +1,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: encoder_model
+  name: encoder-model
   namespace: app
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: encoder_model
+      app: encoder-model
   template:
     metadata:
       labels:
-        app: encoder_model
+        app: encoder-model
     spec:
       containers:
-      - name: encoder_model
-        image: sgawalsh/encoder_model:latest
+      - name: encoder-model
+        image: sgawalsh/video-analysis-encoder-model:latest
 
         ports:
         - containerPort: 8000

@@ -1,21 +1,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: llm_sidecar
+  name: llm-sidecar
   namespace: app
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: llm_sidecar
+      app: llm-sidecar
   template:
     metadata:
       labels:
-        app: llm_sidecar
+        app: llm-sidecar
     spec:
       containers:
-      - name: llm_model
-        image: sgawalsh/llm_model:latest
+      - name: llm-model
+        image: sgawalsh/video-analysis-llm-model:latest
 
         ports:
         - containerPort: 11434
@@ -40,16 +40,11 @@ spec:
             path: /
             port: 11434
           periodSeconds: 5
-      - name: llm_worker
+      - name: llm-worker
         image: sgawalsh/video-analysis-worker:latest
         ports:
           - name: metrics
             containerPort: 2112
-        env:
-          - name: role
-            value: llm_worker
-          - name: llm_concurrency
-            value: "1"
         envFrom:
           - configMapRef:
               name: postgres-config

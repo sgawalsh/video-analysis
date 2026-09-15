@@ -50,7 +50,7 @@ services:
     deploy:
       replicas: 2
 
-  llm_worker:
+  llm-worker:
     build: ./worker
     depends_on:
       - postgres
@@ -61,14 +61,14 @@ services:
       role: llm_worker
       llm_concurrency: "${llm_concurrency:-1}"
 
-  encoder_model:
+  encoder-model:
     build: ./encoder_model
     expose:
       - "8000"
     volumes:
       - encoder_model_data:/root/.cache/huggingface
 
-  llm_model:
+  llm-model:
     build: ./llm_model
     expose:
       - "11434:11434"

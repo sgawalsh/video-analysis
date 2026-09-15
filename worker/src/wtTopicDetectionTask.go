@@ -44,7 +44,7 @@ func (w *Worker) topicDetectionEmbed(ctx context.Context, jobId int, videoURL st
 		return err
 	}
 
-	embedder := NewClient("http://encoder_model:8000")
+	embedder := NewClient("http://encoder-model:8000")
 	var texts []string
 	for _, chunk := range myChunks {
 		texts = append(texts, strings.Join(chunk.Text, " "))

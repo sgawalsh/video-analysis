@@ -1,11 +1,11 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: encoder_model
+  name: encoder-model
   namespace: app
 spec:
   selector:
-    app: encoder_model
+    app: encoder-model
 
   ports:
   - port: 8000

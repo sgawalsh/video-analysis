@@ -2,7 +2,6 @@ from fastapi import FastAPI # type: ignore
 from sentence_transformers import SentenceTransformer # type: ignore
 import faiss # type: ignore
 import numpy as np # type: ignore
-import requests # type: ignore
 
 app = FastAPI()
 

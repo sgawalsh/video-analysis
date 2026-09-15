@@ -4,6 +4,9 @@ metadata:
   name: llm-worker-config
   namespace: app
 data:
-  worker_concurrency: "1"
+  llm_concurrency: "1"
   worker_execution_timeout_interval: "5"
   worker_max_job_retries: "3"
+  role: "llm_worker"
+  LLM_BASE_URL: "localhost"
+  LLM_PORT: "11434"

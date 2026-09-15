@@ -6,9 +6,20 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 )
+
+var llmUrl = setLlmUrl()
+
+func setLlmUrl() string {
+	url := fmt.Sprintf("http://%s:%s/api/generate", os.Getenv("LLM_BASE_URL"), os.Getenv("LLM_PORT"))
+	if os.Getenv("LLM_BASE_URL") == "" || os.Getenv("LLM_PORT") == "" {
+		url = "http://localhost:11434/api/generate"
+	}
+	return url
+}
 
 func (w *Worker) runPrompt(ctx context.Context, prompt string) (string, error) { // calls llm generation with default hard-coded option values
 	return w.generateWithOllama(ctx, "llama3.2:1b", prompt, OllamaOptions{
@@ -43,7 +54,7 @@ func (w *Worker) generateWithOllama(
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodPost,
-		"http://llm_model:11434/api/generate",
+		llmUrl,
 		bytes.NewBuffer(jsonData),
 	)
 	if err != nil {
