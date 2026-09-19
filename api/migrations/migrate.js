@@ -40,7 +40,8 @@ async function runMigrations(pool, { enableCron = false } = {}) {
       public_id UUID NOT NULL DEFAULT gen_random_uuid() UNIQUE,
       type job_type NOT NULL,
       query TEXT,
-      created_at TIMESTAMPTZ DEFAULT NOW()
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      last_job_claimed_at TIMESTAMPTZ
     )
   `);
 

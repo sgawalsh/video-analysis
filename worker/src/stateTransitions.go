@@ -63,18 +63,45 @@ func (w *Worker) claimNextJob(ctx context.Context, jobTypes []string) (JobInfo, 
 	var job JobInfo
 
 	err := w.db.QueryRowContext(ctx, `
-		UPDATE jobs
-		SET status = $1,
-		    started_at = NOW()
-		WHERE id IN (
-			SELECT id
-			FROM jobs
-			WHERE status = $2 AND type = ANY($3)
-			ORDER BY id
-			FOR UPDATE SKIP LOCKED
+		WITH next_job AS (
+			SELECT
+				j.id,
+				j.session_id
+			FROM jobs j
+			JOIN sessions s ON s.id = j.session_id
+			WHERE j.status = $2
+			AND j.type = ANY($3)
+			ORDER BY
+				s.last_job_claimed_at NULLS FIRST,
+				j.id
+			FOR UPDATE OF j SKIP LOCKED
 			LIMIT 1
+		),
+		claimed_job AS (
+			UPDATE jobs j
+			SET
+				status = $1,
+				started_at = NOW()
+			FROM next_job nj
+			WHERE j.id = nj.id
+			RETURNING
+				j.id,
+				j.session_id,
+				j.target_id,
+				j.title,
+				j.type,
+				j.query
 		)
-		RETURNING id, target_id, title, type, query
+		UPDATE sessions s
+		SET last_job_claimed_at = NOW()
+		FROM claimed_job cj
+		WHERE s.id = cj.session_id
+		RETURNING
+			cj.id,
+			cj.target_id,
+			cj.title,
+			cj.type,
+			cj.query;
 	`, StatusRunning, StatusPending, pq.Array(jobTypes)).Scan(
 		&job.ID,
 		&job.TargetID,
