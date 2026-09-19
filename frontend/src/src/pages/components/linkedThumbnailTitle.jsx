@@ -1,7 +1,9 @@
 function LinkedThumbnailTitle({title, targetId, startTime=0}){
+    const url = `https://www.youtube.com/watch?v=${targetId}${startTime > 0 ? `&t=\${startTime}` : ''}`;
+
     return(
         <a
-            href={`https://www.youtube.com/watch?v=${targetId}&t=${startTime}`}
+            href={url}
             target="_blank"
             rel="noopener noreferrer"
             >
