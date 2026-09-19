@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -38,11 +39,14 @@ func getSubs(videoURL string) (string, []string, string, error) {
 		"yt-dlp",
 		"--print", "%(title)s",
 		"--skip-download",
+		"--",
 		videoURL,
 	)
 
 	titleOutput, err := titleCmd.Output()
 	if err != nil {
+		log.Printf("yt-dlp title failed: %v", err)
+		log.Printf("yt-dlp output: %s", string(titleOutput))
 		return "", nil, "", err
 	}
 
@@ -61,6 +65,7 @@ func getSubs(videoURL string) (string, []string, string, error) {
 		"--sub-lang", "en",
 		"--convert-subs", "vtt",
 		"--output", outputTemplate,
+		"--",
 		videoURL,
 	)
 
