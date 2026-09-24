@@ -1,5 +1,4 @@
 const express = require('express');
-// const jobRoutes = require('./routes/jobRoutes');
 const sessionRoutes = require('./routes/sessionRoutes');
 const createPgListener = require('./pgListener');
 const EventHub = require('./eventHub');
@@ -9,12 +8,11 @@ const {
   metricsEndpoint,
 } = require('./metrics');
 
-function createApp({ pool }) {
+function createApp({ pool, startListener = true }) {
   const app = express();
   app.use(express.json());
   
   app.use(metricsMiddleware);
-  // app.use('/jobs', jobRoutes({ pool }));
   app.get('/metrics', metricsEndpoint);
 
   app.get('/health', (_req, res) => {
@@ -24,9 +22,11 @@ function createApp({ pool }) {
   const hub = new EventHub();
 
   app.use('/sessions', sessionRoutes({ pool, hub }));
-  createPgListener({ pool, hub })
-    .then(() => console.log('PG listener started'))
-    .catch(console.error);
+  if (startListener) {
+    createPgListener({ pool, hub })
+      .then(() => console.log('PG listener started'))
+      .catch(console.error);
+  }
 
   return app;
 }

@@ -14,8 +14,13 @@ test('user can create a job and see job status', async () => {
   const user = userEvent.setup();
 
   await user.type(
-    screen.getByPlaceholderText(/job description/i),
-    'My test job'
+    screen.getByPlaceholderText(/Video URL/i),
+    'https://www.youtube.com/watch?v=testURL'
+  );
+
+  await user.type(
+    screen.getByPlaceholderText(/Search term/i),
+    'test search'
   );
   
   // Click submit
@@ -24,6 +29,6 @@ test('user can create a job and see job status', async () => {
 
   // Assert job appears
   expect(
-    await screen.findByText('Description: My test job')
+    await screen.findByText('testURL')
   ).toBeTruthy();
 });

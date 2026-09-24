@@ -9,7 +9,7 @@ describe('API basic endpoints', () => {
       connect: jest.fn(),
     };
 
-    app = createApp({ pool });
+    app = createApp({ pool, startListener: false });
   });
 
   test('GET /health returns health message', async () => {
@@ -27,12 +27,16 @@ describe('API basic endpoints', () => {
     expect(res.text).toContain('http_requests_total');
   });
 
-  test('POST /jobs without description returns 400', async () => {
+  test('POST /sessions without description returns 400', async () => {
     const res = await request(app)
-      .post('/jobs')
-      .send({}); // no description
+      .post('/sessions')
+      .send({
+        mode: "single",
+        type: "SEMANTIC_SEARCH",
+        searchTerm: "test query",
+      }); // no description
 
     expect(res.statusCode).toBe(400);
-    expect(res.body).toEqual({ error: 'Description is required' });
+    expect(res.body).toEqual({ error: 'Video url is required' });
   });
 });

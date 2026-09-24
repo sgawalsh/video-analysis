@@ -1,4 +1,13 @@
 jest.setTimeout(30000); // allow container startup time
+jest.mock('../metrics', () => ({
+  metricsMiddleware: jest.fn((req, res, next) => next()),
+  metricsEndpoint: jest.fn((req, res) => {
+    res.send('');
+  }),
+  jobFailures: {
+    inc: jest.fn(),
+  },
+}));
 
 const { PostgreSqlContainer } = require('@testcontainers/postgresql');
 const { Pool } = require('pg');
@@ -20,7 +29,7 @@ beforeAll(async () => {
 
   // Connect the pool
   pool = new Pool({ connectionString: container.getConnectionUri() });
-  app = createApp({ pool });
+  app = createApp({ pool, startListener: false });
 
   await runMigrations(pool);
 });
@@ -35,23 +44,39 @@ afterAll(async () => {
   if (container) await container.stop();
 });
 
-describe('POST /jobs integration', () => {
+describe('POST /sessions integration', () => {
   test('creates a job successfully', async () => {
     const res = await request(app)
-      .post('/jobs')
-      .send({ description: 'Integration job' });
+      .post('/sessions')
+      .send({
+        mode: "single",
+        type: "SEMANTIC_SEARCH",
+        videoURL: "https://www.youtube.com/watch?v=testURL",
+        searchTerm: "test query",
+      });
 
     expect(res.statusCode).toBe(201);
     expect(res.body).toHaveProperty('public_id');
-    expect(res.body.description).toBe('Integration job');
 
-    const dbRes = await pool.query('SELECT * FROM jobs WHERE public_id = $1', [res.body.public_id]);
+    const dbRes = await pool.query('SELECT * FROM jobs WHERE session_public_id = $1', [res.body.public_id]);
     expect(dbRes.rowCount).toBe(1);
   });
 
-  test('returns 400 if description missing', async () => {
-    const res = await request(app).post('/jobs').send({});
+  test('returns 400 if type missing', async () => {
+    const res = await request(app).post('/sessions').send({type:"INVALID_TYPE"});
     expect(res.statusCode).toBe(400);
-    expect(res.body).toEqual({ error: 'Description is required' });
+    expect(res.body).toEqual({ error: 'Invalid job type: INVALID_TYPE' });
+  });
+
+  test('returns 400 if query is missing for semantic search', async () => {
+    const res = await request(app).post('/sessions').send({type:"SEMANTIC_SEARCH"});
+    expect(res.statusCode).toBe(400);
+    expect(res.body).toEqual({ error: 'Search term is required' });
+  });
+
+  test('returns 400 if query is missing for keyword search', async () => {
+    const res = await request(app).post('/sessions').send({type:"KEYWORD_SEARCH"});
+    expect(res.statusCode).toBe(400);
+    expect(res.body).toEqual({ error: 'Search term is required' });
   });
 });

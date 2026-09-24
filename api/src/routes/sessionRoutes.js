@@ -1,14 +1,14 @@
 const express = require('express');
-const jobFailures = require('../metrics');
+const {jobFailures} = require('../metrics');
 const {getSessionJobCounts, getSessionErrors, getChannelSearchStatus, getSessionType, getSessionResults} = require('../sessionsRepository');
 
 function sessionRoutes({ pool, hub }) {
     const router = express.Router();
     
     const VALID_JOB_TYPES = Object.freeze([
+    'KEYWORD_SEARCH',
     'SEMANTIC_SEARCH',
     'TOPIC_DETECTION_EMBED',
-    'KEYWORD_SEARCH',
     'VIDEO_SUMMARIZATION_TRANSCRIBE'
     ]);
 
@@ -27,7 +27,7 @@ function sessionRoutes({ pool, hub }) {
         if (!VALID_JOB_TYPES.includes(type)) {
             return res.status(400).json({error: 'Invalid job type: ' + type,});
         }
-        // Semantic search validation
+        // Semantic/keyword search validation
         if (['SEMANTIC_SEARCH', 'KEYWORD_SEARCH'].includes(type) && !searchTerm) {
             return res.status(400).json({error: 'Search term is required',});
         }
