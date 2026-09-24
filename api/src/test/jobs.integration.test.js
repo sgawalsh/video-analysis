@@ -27,7 +27,7 @@ beforeAll(async () => {
 
 beforeEach(async () => {
   // Clean the table before each test
-  await pool.query('TRUNCATE TABLE jobs RESTART IDENTITY');
+  await pool.query('TRUNCATE TABLE jobs RESTART IDENTITY CASCADE');
 });
 
 afterAll(async () => {

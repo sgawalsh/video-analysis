@@ -29,7 +29,7 @@ func OpenTestDB(t *testing.T) *sql.DB {
 
 func TruncateJobs(t *testing.T, db *sql.DB) {
 	t.Helper()
-	_, err := db.Exec(`TRUNCATE jobs RESTART IDENTITY`)
+	_, err := db.Exec(`TRUNCATE jobs RESTART IDENTITY CASCADE`)
 	if err != nil {
 		t.Fatalf("truncate failed: %v", err)
 	}
