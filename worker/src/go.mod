@@ -1,4 +1,4 @@
-module github.com/sgawalsh/job-processor/worker/src
+module github.com/sgawalsh/video-analysis/worker/src
 
 go 1.26
 
