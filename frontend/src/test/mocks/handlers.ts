@@ -7,13 +7,6 @@ export const handlers = [
   http.post('/api/sessions', async ({ request }) => {
     const body = await request.json() as any;
 
-    if (!body.description) {
-      return HttpResponse.json(
-        { error: 'Description is required' },
-        { status: 400 }
-      );
-    }
-
     const job = {
       id: jobs.length + 1,
       description: body.description,

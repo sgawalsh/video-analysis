@@ -38,5 +38,5 @@ test('shows error message on API failure', async () => {
     screen.getByRole('button', { name: /submit/i })
   );
 
-  expect(await screen.findByText(/Unknown Error Encountered/i)).toBeTruthy();
+  expect(await screen.findByText(/Failed to submit job/i)).toBeTruthy();
 });
