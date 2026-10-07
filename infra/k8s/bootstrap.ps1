@@ -1,4 +1,5 @@
 $timeout = 120
+$modelName = "llama3.2:1b"
 
 Write-Host "Bootstrapping Kubernetes Cluster..."
 
@@ -35,8 +36,45 @@ kubectl apply -R -f .\app\
 
 kubectl wait --for=condition=Ready pods --all -n app --timeout=${timeout}s
 
+
 ############################################
-# 4. Install KEDA and deploy ScaledObject
+# 4. Ensure LLM model is available
+############################################
+
+Write-Host "Waiting for LLM model pod..."
+
+kubectl wait `
+    --for=condition=Ready `
+    pod `
+    -l app=llm-model-worker `
+    -n app `
+    --timeout=${timeout}s
+
+$llmPod = kubectl get pod `
+    -l app=llm-model-worker `
+    -n app `
+    -o jsonpath="{.items[0].metadata.name}"
+
+Write-Host "Checking for $modelName..."
+
+$model = kubectl exec -n app $llmPod -c llm-model -- ollama list
+
+if ($model -notmatch $modelName) {
+    Write-Host "Model not found. Pulling $modelName..."
+
+    kubectl exec -n app $llmPod -c llm-model -- `
+        ollama pull $modelName
+
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to pull $modelName"
+    }
+}
+else {
+    Write-Host "$modelName already exists in the persistent volume."
+}
+
+############################################
+# 5. Install KEDA and deploy ScaledObject
 ############################################
 Write-Host "Installing KEDA..."
 
@@ -54,7 +92,7 @@ Write-Host "Deploying KEDA ScaledObject..."
 kubectl apply -R -f .\keda\
 
 ############################################
-# 5. Apply Monitoring Resources
+# 6. Apply Monitoring Resources
 ############################################
 
 Write-Host "Applying ServiceMonitors and dashboards..."
@@ -62,7 +100,7 @@ kubectl apply -R -f .\monitoring\monitors\
 kubectl apply -R -f .\monitoring\dashboards\
 
 ############################################
-# 6. Install Ingress Controller
+# 7. Install Ingress Controller
 ############################################
 
 Write-Host "Installing ingress controller..."
@@ -107,7 +145,7 @@ if (-not $endpoints) {
 Write-Host "Admission webhook is ready."
 
 ############################################
-# 7. Apply Ingress Resource
+# 8. Apply Ingress Resource
 ############################################
 
 Write-Host "Applying ingress resources..."

@@ -1,33 +1,39 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: llm-sidecar
+  name: llm-model-worker
   namespace: app
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: llm-sidecar
+      app: llm-model-worker
   template:
     metadata:
       labels:
-        app: llm-sidecar
+        app: llm-model-worker
     spec:
       containers:
       - name: llm-model
         image: sgawalsh/video-analysis-llm-model:latest
 
         ports:
-        - containerPort: 11434
+          - containerPort: 11434
 
         resources:
           requests:
             cpu: 2
             memory: 4Gi
-
+            nvidia.com/gpu: 1
           limits:
               cpu: 4
               memory: 8Gi
+              nvidia.com/gpu: 1
+              
+        volumeMounts:
+          - name: llm-model-data
+            mountPath: /root/.ollama
+
         startupProbe:
           httpGet:
             path: /
@@ -52,3 +58,7 @@ spec:
               name: llm-worker-config
           - secretRef:
               name: postgres-secret
+      volumes:
+        - name: llm-model-data
+          persistentVolumeClaim:
+            claimName: llm-model-data
