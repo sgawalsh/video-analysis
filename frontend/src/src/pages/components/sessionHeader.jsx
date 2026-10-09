@@ -86,7 +86,7 @@ function SessionHeader({ counts, errors }) {
                             >
                               <div>
                                 <span>
-                                  <strong>{e.target_id}</strong> - <VideoTitle targetId={e.target_id} /> - {e.message}
+                                  <strong><a href={`https://www.youtube.com/watch?v=${e.target_id}`} target="_blank" rel="noopener noreferrer">{e.target_id}</a></strong> - <VideoTitle targetId={e.target_id} /> - {e.message}
                                 </span>
                               </div>
                             </div>

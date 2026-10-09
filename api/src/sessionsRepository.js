@@ -29,17 +29,22 @@ async function getSessionErrors(pool, public_id){
     return result.rows;
 }
 
-async function getChannelSearchStatus(pool, public_id){
+async function getChannelSearchInfo(pool, public_id) {
     const result = await pool.query(
         `
-        SELECT status
-        FROM jobs 
+        SELECT status, last_error
+        FROM jobs
         WHERE type = 'CHANNEL_SEARCH' AND session_public_id = $1
         `,
         [public_id]
     );
 
-    return result.rows.length > 0 ? result.rows[0].status : null; // If no results are found, assume single video job
+    return result.rows.length > 0
+        ? {
+            status: result.rows[0].status,
+            lastError: result.rows[0].last_error
+        }
+        : null; // If no results are found, assume single video job
 }
 
 async function getSessionType(pool, public_id){
@@ -73,4 +78,4 @@ async function getSessionResults(pool, public_id){
     }, {});
 }
 
-module.exports = {getSessionJobCounts, getSessionErrors, getChannelSearchStatus, getSessionType, getSessionResults};
+module.exports = {getSessionJobCounts, getSessionErrors, getChannelSearchInfo, getSessionType, getSessionResults};

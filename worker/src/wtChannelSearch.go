@@ -63,25 +63,23 @@ func (w *Worker) channelSearch(ctx context.Context, jobId int, channelID string)
 		return fmt.Errorf("binary search failed: %w", err)
 	}
 
-	publicID, jobType, query, err := w.getSessionInfoById(ctx, sessionID)
-	if err != nil {
-		return fmt.Errorf("failed to get session info: %w", err)
-	}
-
 	if iEnd < iStart {
 		fmt.Println("No videos found within the specified date range.")
-		return nil
+	} else {
+		publicID, jobType, query, err := w.getSessionInfoById(ctx, sessionID)
+		if err != nil {
+			return fmt.Errorf("failed to get session info: %w", err)
+		}
+
+		toInsert := ids[iStart : iEnd+1]
+		successCount, err := w.insertBatch(ctx, sessionID, publicID, jobType, query, toInsert)
+		if err != nil {
+			return fmt.Errorf("failed to insert batch: %w", err)
+		}
+		fmt.Printf("Inserted %d/%d videos\n", successCount, len(toInsert))
 	}
 
-	toInsert := ids[iStart : iEnd+1]
-	successCount, err := w.insertBatch(ctx, sessionID, publicID, jobType, query, toInsert)
-	if err != nil {
-		return fmt.Errorf("failed to insert batch: %w", err)
-	}
-
-	// fmt.Printf("warnings:\n%s\n", errBytes)
-	// fmt.Printf("video ids:\n%s\n", idsBytes)
-	fmt.Printf("Inserted %d/%d videos\n", successCount, len(toInsert))
+	fmt.Println("Setting channel search success")
 
 	return w.setResultAndSuccessStatus(ctx, jobId, "", []byte("[]"))
 }
@@ -91,6 +89,28 @@ func (w *Worker) channelSearch(ctx context.Context, jobId int, channelID string)
 func binarySearchByUploadDate(ctx context.Context, ids []string, startDate, endDate time.Time) (int, int, error) {
 	if len(ids) == 0 {
 		return 0, -1, nil // Return empty slice boundaries
+	}
+
+	// Check the newest video first.
+	// If it's already older than endDate, every other video is even older, so there cannot be any matches.
+	newestDate, err := getUploadDate(ctx, ids[0])
+	if err != nil {
+		return 0, 0, err
+	}
+	if newestDate.Before(endDate) {
+		fmt.Println("Newest after end.")
+		return 0, -1, nil
+	}
+
+	// Check the oldest video.
+	// If it's newer than startDate, every video is newer than the requested range, so there cannot be any matches.
+	oldestDate, err := getUploadDate(ctx, ids[len(ids)-1])
+	if err != nil {
+		return 0, 0, err
+	}
+	if oldestDate.After(startDate) {
+		fmt.Println("Oldest before new.")
+		return 0, -1, nil
 	}
 
 	var searchErr error

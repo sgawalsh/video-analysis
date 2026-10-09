@@ -1,6 +1,6 @@
 const express = require('express');
 const {jobFailures} = require('../metrics');
-const {getSessionJobCounts, getSessionErrors, getChannelSearchStatus, getSessionType, getSessionResults} = require('../sessionsRepository');
+const {getSessionJobCounts, getSessionErrors, getChannelSearchInfo, getSessionType, getSessionResults} = require('../sessionsRepository');
 
 function sessionRoutes({ pool, hub }) {
     const router = express.Router();
@@ -55,14 +55,17 @@ function sessionRoutes({ pool, hub }) {
             const counts = await getSessionJobCounts(pool, public_id);
             const results = await getSessionResults(pool, public_id);
             const errorMessages = await getSessionErrors(pool, public_id);
-            const channelSearchStatus = await getChannelSearchStatus(pool, public_id);
+            const channelSearchInfo = await getChannelSearchInfo(pool, public_id);
 
             res.json({
                 type: sessionType,
                 counts,
                 results,
                 errorMessages,
-                channelSearchStatus
+                channelSearchInfo: channelSearchInfo ?? {
+                    status: null,
+                    lastError: null
+                }
             });
 
         } catch (err) {

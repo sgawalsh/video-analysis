@@ -47,7 +47,7 @@ func getSubs(videoURL string) (string, []string, string, error) {
 	if err != nil {
 		log.Printf("yt-dlp title failed: %v", err)
 		log.Printf("yt-dlp output: %s", string(titleOutput))
-		return "", nil, "", err
+		return "", nil, "", fmt.Errorf("yt-dlp title read failed: %w", err)
 	}
 
 	title := strings.TrimSpace(string(titleOutput))
@@ -71,7 +71,7 @@ func getSubs(videoURL string) (string, []string, string, error) {
 
 	_, err = subCmd.CombinedOutput()
 	if err != nil {
-		return "", nil, "", err
+		return "", nil, "", fmt.Errorf("yt-dlp failed to download subtitles: %w", err)
 	}
 
 	files, err := filepath.Glob(

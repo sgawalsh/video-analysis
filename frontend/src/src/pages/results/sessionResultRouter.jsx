@@ -11,8 +11,7 @@ function SessionResultRouter({ jobType, results }) {
         "TOPIC_DETECTION_EMBED": TopicDetectionResult,
         "VIDEO_SUMMARIZATION_TRANSCRIBE": VideoSummarizationResult,
     };
-  const Renderer =
-    renderers[jobType] ?? GenericResult;
+  const Renderer = renderers[jobType] ?? GenericResult;
 
   return <Renderer results={results} />;
 }

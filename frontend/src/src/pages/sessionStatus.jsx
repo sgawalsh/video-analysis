@@ -104,21 +104,27 @@ function SessionStatus() {
 
             return {
               ...prev,
-              channelSearchStatus: 'SUCCEEDED'
+              channelSearchInfo: {
+                status: 'SUCCEEDED',
+                lastError: null
+              }
             };
           });
         });
 
         es.addEventListener('channel_search_failed', (e) => {
           const event = JSON.parse(e.data);
+          console.log(event)
           console.log('channel_search_failed fired');
           setSessionState((prev) => {
             if (!prev) return prev;
 
             return {
               ...prev,
-              channelSearchStatus: 'FAILED',
-              channelSearchError: event.error_message
+              channelSearchInfo: {
+                status: 'FAILED',
+                lastError: event.error_message
+              }
             };
           });
         });
@@ -141,17 +147,23 @@ function SessionStatus() {
 
   if (!sessionState) return <p>Loading…</p>;
 
-  if (['PENDING', 'RUNNING'].includes(sessionState.channelSearchStatus)) {
+  if (['PENDING', 'RUNNING'].includes(sessionState.channelSearchInfo.status)) {
     return <div>Channel search is active...</div>;
-  }else if (sessionState.channelSearchStatus === 'FAILED') {
-    return <><h3>Channel search failed.</h3>
-    <div>Error Message: {sessionState.channelSearchError}</div></>;
+  }else if (sessionState.channelSearchInfo.status === 'FAILED') {
+    return <>
+      <h3>Channel search failed.</h3>
+      {sessionState.channelSearchInfo.lastError && <div>Error Message: {sessionState.channelSearchInfo.lastError}</div>}
+    </>;
+  }
+
+  if (sessionState.counts.total == 0){
+    return <p>No jobs were found for this session. Please check your input parameters.</p>;
   }
 
   return (
     <>
       <SessionHeader counts = {sessionState.counts} errors={sessionState.errorMessages}/>
-      <SessionResultRouter jobType={sessionState.type} results={sessionState.results} />
+      <SessionResultRouter jobType={sessionState.type} results={sessionState.results } />
     </>
   );
 }
