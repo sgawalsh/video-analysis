@@ -12,59 +12,58 @@ function TopicDetectionResult({ results }) {
   )
 
   return (
-    <div style={{ padding: 20 }}>
-      <table style={{ width: "100%", borderCollapse: "collapse" }}>
+  <main className="container results-page">
+    <div className="results-table-wrapper">
+      <table className="results-table topic-results-table">
         <thead>
           <tr>
-            <th style={{ padding: 8, borderBottom: "2px solid #000" }}>
-              Video
-            </th>
-            <th style={{ padding: 8, borderBottom: "2px solid #000" }}>
-              Chapters
-            </th>
+            <th scope="col">Video</th>
+            <th scope="col">Detected Chapters</th>
           </tr>
         </thead>
 
         <tbody>
           {rows.map((row) => (
             <tr key={row.targetId}>
-              {/* LEFT: video info */}
-              <td style={{ padding: 8, verticalAlign: "top", width: 220 }}>
-                  <LinkedThumbnailTitle title={row.title} targetId={row.targetId}></LinkedThumbnailTitle>
+              <td className="result-video">
+                <LinkedThumbnailTitle
+                  title={row.title}
+                  targetId={row.targetId}
+                />
               </td>
 
-              {/* RIGHT: chapters */}
-              <td style={{ padding: 8, verticalAlign: "top" }}>
-                {row.topics.map((topic, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      marginBottom: 8,
-                      padding: "6px 8px",
-                      background: "#f5f5f5",
-                      borderRadius: 4,
-                    }}
-                  >
+              <td className="topic-list-cell">
+                <div className="topic-list">
+                  {row.topics.map((topic, i) => (
                     <a
+                      key={`${row.targetId}-${topic.StartTime}-${i}`}
+                      className="topic-item"
                       href={`https://www.youtube.com/watch?v=${row.targetId}&t=${topic.StartTime}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      style={{ textDecoration: "none" }}
                     >
-                      {topic.Text.replace(/^"|"$/g, "")}
-                      {" "}
-                      <span style={{ color: "#666" }}>
-                        ({FormatMMSS(topic.StartTime)}s)
+                      <span className="topic-timestamp">
+                        {FormatMMSS(topic.StartTime)}
+                      </span>
+
+                      <span className="topic-text">
+                        {topic.Text.replace(/^"|"$/g, "")}
+                      </span>
+
+                      <span className="topic-link-icon" aria-hidden="true">
+                        ↗
                       </span>
                     </a>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </td>
             </tr>
           ))}
         </tbody>
       </table>
     </div>
+  </main>
+
   );
 }
 

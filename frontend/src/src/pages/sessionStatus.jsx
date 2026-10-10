@@ -147,17 +147,29 @@ function SessionStatus() {
 
   if (!sessionState) return <p>Loading…</p>;
 
-  if (['PENDING', 'RUNNING'].includes(sessionState.channelSearchInfo.status)) {
-    return <div>Channel search is active...</div>;
-  }else if (sessionState.channelSearchInfo.status === 'FAILED') {
-    return <>
-      <h3>Channel search failed.</h3>
-      {sessionState.channelSearchInfo.lastError && <div>Error Message: {sessionState.channelSearchInfo.lastError}</div>}
-    </>;
+if (['PENDING', 'RUNNING'].includes(sessionState.channelSearchInfo.status)) {
+  return (
+    <main className="container status-message">
+      <p>Channel search is active...</p>
+    </main>
+  );
+  } else if (sessionState.channelSearchInfo.status === 'FAILED') {
+    return (
+      <main className="container status-message">
+        <h3>Channel search failed.</h3>
+        {sessionState.channelSearchInfo.lastError && (
+          <p>Error Message: {sessionState.channelSearchInfo.lastError}</p>
+        )}
+      </main>
+    );
   }
 
-  if (sessionState.counts.total == 0){
-    return <p>No jobs were found for this session. Please check your input parameters.</p>;
+  if (sessionState.counts.total == 0) {
+    return (
+      <main className="container status-message">
+        <p>No jobs were found for this session. Please check your input parameters.</p>
+      </main>
+    );
   }
 
   return (

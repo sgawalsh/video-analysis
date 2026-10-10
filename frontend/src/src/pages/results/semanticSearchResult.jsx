@@ -12,68 +12,69 @@ function SemanticSearchResult({ results }) {
   }).sort((a, b) => b.Distance - a.Distance);
 
   return (
-    <div style={{ padding: 20 }}>
-
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-        <thead>
-          <tr>
-            <th style={{ textAlign: 'center', padding: '8px', borderBottom: '2px solid #000' }}>
-              Rank
-            </th>
-            <th style={{ textAlign: 'center', padding: '8px', borderBottom: '2px solid #000' }}>
-              Match Score
-            </th>
-            <th style={{ textAlign: 'center', padding: '8px', borderBottom: '2px solid #000' }}>
-              Thumbnail
-            </th>
-            <th style={{ textAlign: 'center', padding: '8px', borderBottom: '2px solid #000' }}>
-              Link
-            </th>
-          </tr>
-        </thead>
-
-        <tbody>
-          {rows.map((row, rank) => (
-            <tr key={`${row.targetId}-${row.Index}`}>
-              <td style={{ padding: '8px' }}>
-                #{rank + 1}
-              </td>
-              <td style={{ minWidth: 200 }}>
-                <div
-                  style={{
-                    background: '#eee',
-                    height: 8,
-                    borderRadius: 4,
-                    overflow: 'hidden'
-                  }}
-                >
-                  <div
-                    style={{
-                      width: `${row.Distance * 100}%`,
-                      height: '100%',
-                      background: '#4caf50'
-                    }}
-                  />
-                </div>
-                <div>{row.Distance.toFixed(3)}</div>
-              </td>
-              <td style={{ padding: '8px' }}>
-                  <LinkedThumbnailTitle title={row.title} targetId={row.targetId} startTime={row.StartTime}></LinkedThumbnailTitle>
-              </td>
-              <td style={{ padding: '8px', borderBottom: '1px solid #ddd' }}>
-                <a
-                  href={`https://www.youtube.com/watch?v=${row.targetId}&t=${row.StartTime}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Link - {FormatMMSS(row.StartTime)}s
-                </a>
-              </td>
+    <main className="container results-page">
+      <div className="results-table-wrapper">
+        <table className="results-table">
+          <thead>
+            <tr>
+              <th scope="col">Rank</th>
+              <th scope="col">Match Score</th>
+              <th scope="col">Video</th>
+              <th scope="col">Link</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+          </thead>
+
+          <tbody>
+            {rows.map((row, rank) => (
+              <tr key={`${row.targetId}-${row.Index}`}>
+                <td className="result-rank">
+                  #{rank + 1}
+                </td>
+
+                <td className="match-score-cell">
+                  <div
+                    className="match-score-bar"
+                    role="meter"
+                    aria-label="Match score"
+                    aria-valuemin={0}
+                    aria-valuemax={1}
+                    aria-valuenow={row.Distance}
+                  >
+                    <div
+                      className="match-score-fill"
+                      style={{
+                        width: `${Math.max(0, Math.min(1, row.Distance)) * 100}%`
+                      }}
+                    />
+                  </div>
+                  <span className="match-score-value">
+                    {row.Distance.toFixed(3)}
+                  </span>
+                </td>
+
+                <td className="result-video">
+                  <LinkedThumbnailTitle
+                    title={row.title}
+                    targetId={row.targetId}
+                    startTime={row.StartTime}
+                  />
+                </td>
+
+                <td className="result-link">
+                  <a
+                    href={`https://www.youtube.com/watch?v=${row.targetId}&t=${row.StartTime}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Link - {FormatMMSS(row.StartTime)}s
+                  </a>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </main>
   );
 }
 

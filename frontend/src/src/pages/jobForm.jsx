@@ -104,13 +104,17 @@ function JobForm() {
   };
 
   return (
-    <div style={{ padding: 20, textAlign: 'center' }}>
-      <h1>Job Processor</h1>
+    <main className="container job-page">
+      <header className="job-header">
+        <h1>Job Processor</h1>
+        <p>Submit a video or search a channel for analysis.</p>
+      </header>
 
-      <form onSubmit={submitJob}>
-        <fieldset disabled={loading} style={{ border: 'none', padding: 0, margin: 0 }}>
+      <form onSubmit={submitJob} className="job-form">
+        <fieldset disabled={loading}>
+          <legend>Job configuration</legend>
 
-          <div style={{ marginBottom: 12 }}>
+          <div className="mode-options">
             <label>
               <input
                 type="radio"
@@ -122,7 +126,7 @@ function JobForm() {
               Single Video
             </label>
 
-            <label style={{ marginLeft: 16 }}>
+            <label>
               <input
                 type="radio"
                 name="mode"
@@ -134,87 +138,94 @@ function JobForm() {
             </label>
           </div>
 
-          <div style={{ marginBottom: 12 }}>
-            <label>
-              Job Type:
-              <select
-                name="jobType"
-                value={formData.jobType}
-                onChange={handleChange}
-                style={{ marginLeft: 10 }}
-              >
-                <option value="SEMANTIC_SEARCH">Semantic Search</option>
-                <option value="KEYWORD_SEARCH">Keyword Search</option>
-                <option value="TOPIC_DETECTION_EMBED">Topic Detection</option>
-                <option value="VIDEO_SUMMARIZATION_TRANSCRIBE">Video Summarization</option>
-              </select>
-            </label>
-          </div>
+          <label htmlFor="jobType">Job Type</label>
+          <select
+            id="jobType"
+            name="jobType"
+            value={formData.jobType}
+            onChange={handleChange}
+            style={{ marginLeft: 10 }}
+          >
+            <option value="SEMANTIC_SEARCH">Semantic Search</option>
+            <option value="KEYWORD_SEARCH">Keyword Search</option>
+            <option value="TOPIC_DETECTION_EMBED">Topic Detection</option>
+            <option value="VIDEO_SUMMARIZATION_TRANSCRIBE">Video Summarization</option>
+          </select>
 
           {/* SINGLE VIDEO INPUT */}
           {formData.mode === "single" && (
-            <div style={{ marginBottom: 12 }}>
+            <>
+              <label htmlFor="videoUrl">YouTube Video URL</label>
               <input
+                id="videoUrl"
                 name="videoUrl"
                 value={formData.videoUrl}
                 onChange={handleChange}
                 placeholder="Video URL"
                 required
-                style={{ width: 400 }}
               />
-            </div>
+            </>
           )}
 
           {/* CHANNEL INPUTS */}
           {formData.mode === "channel" && (
             <>
-              <div style={{ marginBottom: 12 }}>
-                <input
-                  name="channelName"
-                  value={formData.channelName}
-                  onChange={handleChange}
-                  placeholder="Channel name"
-                  required
-                  style={{ width: 400 }}
-                />
-              </div>
+              <label htmlFor="channelName">Channel Name or Handle</label>
+              <input
+                id="channelName"
+                name="channelName"
+                value={formData.channelName}
+                onChange={handleChange}
+                placeholder="Channel Name"
+                required
+                style={{ width: 400 }}
+              />
 
-              <div style={{ marginBottom: 12, display: "flex", gap: 10, justifyContent: "center" }}>
-                <input
-                  type="date"
-                  name="startDate"
-                  value={formData.startDate}
-                  onChange={handleChange}
-                  max={formData.endDate ? formData.endDate : maxAvailableDate}
-                  required
-                  style={{ width: 195 }} 
-                />
-                <input
-                  type="date"
-                  name="endDate"
-                  value={formData.endDate}
-                  onChange={handleChange}
-                  min={formData.startDate}
-                  max={maxAvailableDate} // Prevent future dates
-                  required
-                  style={{ width: 195 }}
-                />
+              <div className="date-fields">
+                <div>
+                  <label htmlFor="startDate">Start Date</label>
+                  <input
+                    id="startDate"
+                    type="date"
+                    name="startDate"
+                    value={formData.startDate}
+                    onChange={handleChange}
+                    max={formData.endDate || maxAvailableDate}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="endDate">End Date</label>
+                  <input
+                    id="endDate"
+                    type="date"
+                    name="endDate"
+                    value={formData.endDate}
+                    onChange={handleChange}
+                    min={formData.startDate}
+                    max={maxAvailableDate}// prevent future dates
+                    required
+                  />
+                </div>
               </div>
             </>
           )}
 
           {/* Conditional Field */}
           {['SEMANTIC_SEARCH', 'KEYWORD_SEARCH'].includes(formData.jobType) && (
-            <div style={{ marginBottom: 12 }}>
+            <>
+              <label htmlFor="searchTerm">Search Term</label>
               <input
+                id="searchTerm"
                 name="searchTerm"
                 value={formData.searchTerm}
                 onChange={handleChange}
-                placeholder="Search term"
+                placeholder="Search Term"
                 required
                 style={{ width: 400 }}
               />
-            </div>
+            </>
           )}
 
           <button 
@@ -227,8 +238,13 @@ function JobForm() {
         </fieldset>
       </form>
 
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-    </div>
+      {error && (
+        <article className="error-message" role="alert">
+          <strong>Unable to submit job</strong>
+          <p>{error}</p>
+        </article>
+      )}
+    </main>
   );
 }
 
