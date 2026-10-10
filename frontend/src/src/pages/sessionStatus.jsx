@@ -73,7 +73,6 @@ function SessionStatus() {
               }
             };
           });
-          console.log("New state: ", sessionState)
         });
 
         es.addEventListener('job_failed', (e) => {

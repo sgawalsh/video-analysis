@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"math"
 	"os"
 	"strings"
@@ -28,8 +27,6 @@ func (w *Worker) videoSummarizationTranscribe(ctx context.Context, jobId int, vi
 	}
 
 	resultJSON, err := json.Marshal(strings.Join(myChunks[0].Text, " "))
-
-	log.Printf("Writing transcript: %s", strings.Join(myChunks[0].Text, " "))
 
 	return w.createLlmJob(ctx, jobId, jobTypeVideoSummarizationLLM, title, resultJSON)
 }
