@@ -34,16 +34,6 @@ summary: content.data?.[0]?.Text || "",
                     <div className="summary-content">
                       <ReactMarkdown>{row.summary}</ReactMarkdown>
                     </div>
-
-                    <div className="summary-footer">
-                      <a
-                        href={`https://www.youtube.com/watch?v=${row.targetId}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        Link
-                      </a>
-                    </div>
                   </td>
                 </tr>
               ))}

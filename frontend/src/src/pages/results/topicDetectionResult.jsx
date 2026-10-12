@@ -50,10 +50,6 @@ function TopicDetectionResult({ results }) {
                           <span className="topic-text">
                             {topic.Text.replace(/^"|"$/g, "")}
                           </span>
-
-                          <span className="topic-link-icon" aria-hidden="true">
-                            ↗
-                          </span>
                         </a>
                       ))}
                     </div>
