@@ -97,8 +97,8 @@ func binarySearchByUploadDate(ctx context.Context, ids []string, startDate, endD
 	if err != nil {
 		return 0, 0, err
 	}
-	if newestDate.Before(endDate) {
-		fmt.Println("Newest after end.")
+	if newestDate.Before(startDate) {
+		fmt.Println("Newest upload is before start date.")
 		return 0, -1, nil
 	}
 
@@ -108,8 +108,8 @@ func binarySearchByUploadDate(ctx context.Context, ids []string, startDate, endD
 	if err != nil {
 		return 0, 0, err
 	}
-	if oldestDate.After(startDate) {
-		fmt.Println("Oldest before new.")
+	if oldestDate.After(endDate) {
+		fmt.Println("Oldest upload is after end date.")
 		return 0, -1, nil
 	}
 
