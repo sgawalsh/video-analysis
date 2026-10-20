@@ -10,8 +10,10 @@ import (
 	"github.com/lib/pq"
 )
 
-var maxAttempts = os.Getenv("worker_max_job_retries")
-var runningTimeout = os.Getenv("worker_running_timeout")
+var (
+	maxAttempts    = os.Getenv("worker_max_job_retries")
+	runningTimeout = os.Getenv("worker_running_timeout")
+)
 
 type JobType string
 
@@ -117,11 +119,11 @@ func (w *Worker) claimNextJob(ctx context.Context, jobTypes []string) (JobInfo, 
 	return job, nil
 }
 
-func (w *Worker) handleJobFailure(ctx context.Context, jobId int, err error) {
+func (w *Worker) handleJobFailure(ctx context.Context, jobId int, failError error) {
 	var attempts int
 
 	// increment attempts counter and set to pending or failed based on attempts < max_attempts
-	err2 := w.db.QueryRowContext(ctx, `
+	err := w.db.QueryRowContext(ctx, `
         UPDATE jobs
         SET attempts = attempts + 1,
             last_error = $2,
@@ -132,10 +134,10 @@ func (w *Worker) handleJobFailure(ctx context.Context, jobId int, err error) {
         WHERE id = $1
 		AND status = $6
         RETURNING attempts
-    `, jobId, err.Error(), maxAttempts, StatusFailed, StatusPending, StatusRunning).Scan(&attempts)
+    `, jobId, failError.Error(), maxAttempts, StatusFailed, StatusPending, StatusRunning).Scan(&attempts)
 
-	if err2 != nil {
-		log.Printf("Failed to update retry state for job %d: %v", jobId, err2)
+	if err != nil {
+		log.Printf("Failed to update retry state for job %d: %v", jobId, err)
 	}
 }
 
