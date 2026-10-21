@@ -144,7 +144,6 @@ function JobForm() {
             name="jobType"
             value={formData.jobType}
             onChange={handleChange}
-            style={{ marginLeft: 10 }}
           >
             <option value="SEMANTIC_SEARCH">Semantic Search</option>
             <option value="KEYWORD_SEARCH">Keyword Search</option>
@@ -178,7 +177,6 @@ function JobForm() {
                 onChange={handleChange}
                 placeholder="Channel Name"
                 required
-                style={{ width: 400 }}
               />
 
               <div className="date-fields">
@@ -223,7 +221,6 @@ function JobForm() {
                 onChange={handleChange}
                 placeholder="Search Term"
                 required
-                style={{ width: 400 }}
               />
             </>
           )}
