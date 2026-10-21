@@ -1,11 +1,9 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"database/sql"
 	"fmt"
-	"os/exec"
 	"sort"
 	"strings"
 	"time"
@@ -30,35 +28,27 @@ func (w *Worker) channelSearch(ctx context.Context, jobId int, channelID string)
 
 	fmt.Printf("Searching for videos in channel %s between %s and %s\n", channelID, startDate.Format("2006-01-02"), endDate.Format("2006-01-02"))
 
-	cmd := exec.CommandContext(
-		ctx,
-		"yt-dlp",
+	stdOut, err := w.runYTDLP(ctx,
 		"--flat-playlist",
-		// "--cookies-from-browser firefox",
+		// "--cookies-from-browser", "firefox",
 		"--print", "id",
 		"--no-warnings",
-		"--ignore-errors",
 		fmt.Sprintf("https://www.youtube.com/%s/videos", channelID),
 	)
-
-	stdOutBuf, err := runCommand(cmd)
 	if err != nil {
 		return err
 	}
 
-	// Split the buffer string into a slice of IDs
+	// Split the output into a slice of IDs.
 	var ids []string
-	if stdOutBuf.Len() > 0 {
-		// Clean up trailing newline before splitting
-		trimmed := strings.TrimSpace(stdOutBuf.String())
-		if trimmed != "" {
-			ids = strings.Split(trimmed, "\n")
-		}
+	trimmed := strings.TrimSpace(string(stdOut))
+	if trimmed != "" {
+		ids = strings.Split(trimmed, "\n")
 	}
 
 	fmt.Printf("Checking: %s\n", ids)
 
-	iStart, iEnd, err := binarySearchByUploadDate(ctx, ids, startDate, endDate)
+	iStart, iEnd, err := w.binarySearchByUploadDate(ctx, ids, startDate, endDate)
 	if err != nil {
 		return fmt.Errorf("binary search failed: %w", err)
 	}
@@ -86,14 +76,14 @@ func (w *Worker) channelSearch(ctx context.Context, jobId int, channelID string)
 
 // finds the index range of videos uploaded between startDate and endDate (inclusive).
 // yt-dlp outputs lists from NEWEST to OLDEST.
-func binarySearchByUploadDate(ctx context.Context, ids []string, startDate, endDate time.Time) (int, int, error) {
+func (w *Worker) binarySearchByUploadDate(ctx context.Context, ids []string, startDate, endDate time.Time) (int, int, error) {
 	if len(ids) == 0 {
 		return 0, -1, nil // Return empty slice boundaries
 	}
 
 	// Check the newest video first.
 	// If it's already older than endDate, every other video is even older, so there cannot be any matches.
-	newestDate, err := getUploadDate(ctx, ids[0])
+	newestDate, err := w.getUploadDate(ctx, ids[0])
 	if err != nil {
 		return 0, 0, err
 	}
@@ -104,7 +94,7 @@ func binarySearchByUploadDate(ctx context.Context, ids []string, startDate, endD
 
 	// Check the oldest video.
 	// If it's newer than startDate, every video is newer than the requested range, so there cannot be any matches.
-	oldestDate, err := getUploadDate(ctx, ids[len(ids)-1])
+	oldestDate, err := w.getUploadDate(ctx, ids[len(ids)-1])
 	if err != nil {
 		return 0, 0, err
 	}
@@ -117,7 +107,7 @@ func binarySearchByUploadDate(ctx context.Context, ids []string, startDate, endD
 
 	//Find the FIRST index where uploadDate <= endDate
 	iStart := sort.Search(len(ids), func(i int) bool {
-		date, err := getUploadDate(ctx, ids[i])
+		date, err := w.getUploadDate(ctx, ids[i])
 		if err != nil {
 			searchErr = err
 			return true
@@ -134,7 +124,7 @@ func binarySearchByUploadDate(ctx context.Context, ids []string, startDate, endD
 	// search from iStart onwards to save API calls.
 	iEndOffset := sort.Search(len(ids)-iStart, func(i int) bool {
 		actualIndex := iStart + i
-		date, err := getUploadDate(ctx, ids[actualIndex])
+		date, err := w.getUploadDate(ctx, ids[actualIndex])
 		if err != nil {
 			searchErr = err
 			return true
@@ -157,24 +147,18 @@ func binarySearchByUploadDate(ctx context.Context, ids []string, startDate, endD
 	return iStart, iEnd, nil
 }
 
-func getUploadDate(ctx context.Context, videoID string) (time.Time, error) {
-	cmd := exec.CommandContext(
-		ctx,
-		"yt-dlp",
-		// "--cookies-from-browser firefox",
+func (w *Worker) getUploadDate(ctx context.Context, videoID string) (time.Time, error) {
+	stdOut, err := w.runYTDLP(ctx,
 		"--print", "upload_date",
 		"--no-warnings",
-		"--ignore-errors",
 		fmt.Sprintf("https://www.youtube.com/watch?v=%s", videoID),
 	)
-
-	stdOutBuf, err := runCommand(cmd)
 	if err != nil {
 		return time.Time{}, err
 	}
 
 	// Parse the upload date
-	uploadDate, err := time.Parse("20060102", strings.TrimSpace(stdOutBuf.String()))
+	uploadDate, err := time.Parse("20060102", strings.TrimSpace(string(stdOut)))
 	if err != nil {
 		return time.Time{}, fmt.Errorf("failed to parse upload date: %w", err)
 	}
@@ -199,20 +183,4 @@ func (w *Worker) getSessionInfoById(ctx context.Context, sessionId int) (string,
 	}
 
 	return publicID, jobType, query.String, nil
-}
-
-func runCommand(cmd *exec.Cmd) (bytes.Buffer, error) {
-	var stdoutBuf, stderrBuf bytes.Buffer
-	cmd.Stdout = &stdoutBuf
-	cmd.Stderr = &stderrBuf
-
-	// Run executes the command and waits for it to complete
-	if err := cmd.Run(); err != nil {
-		return bytes.Buffer{}, fmt.Errorf(
-			"yt-dlp failed: %w\nstderr:\n%s",
-			err,
-			stderrBuf.String(),
-		)
-	}
-	return stdoutBuf, nil
 }

@@ -14,7 +14,7 @@ type SummaryResult struct {
 }
 
 func (w *Worker) videoSummarizationTranscribe(ctx context.Context, jobId int, videoURL string) error {
-	tempDir, subFiles, title, err := getSubs(videoURL)
+	tempDir, subFiles, title, err := w.getSubs(ctx, videoURL)
 	if err != nil {
 		return err
 	}

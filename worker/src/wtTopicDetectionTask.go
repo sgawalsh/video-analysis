@@ -32,7 +32,7 @@ type OllamaResponse struct {
 func (w *Worker) topicDetectionEmbed(ctx context.Context, jobId int, videoURL string) error {
 	// get subs, chunks, embeddings, compare via cosine similarity, break into chapters, identify topic for each chunk set, return results
 
-	tempDir, subFiles, title, err := getSubs(videoURL)
+	tempDir, subFiles, title, err := w.getSubs(ctx, videoURL)
 	if err != nil {
 		return err
 	}
@@ -68,8 +68,8 @@ func (w *Worker) topicDetectionEmbed(ctx context.Context, jobId int, videoURL st
 		})
 	}
 
-	fmt.Printf("boundaries: %v\n", chapterBoundaries)
-	fmt.Printf("chunk 1: %v\n", chapterTexts[0])
+	// fmt.Printf("boundaries: %v\n", chapterBoundaries)
+	// fmt.Printf("chunk 1: %v\n", chapterTexts[0])
 
 	resultJSON, err := json.Marshal(chapters)
 	if err != nil {

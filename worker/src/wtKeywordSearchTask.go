@@ -18,7 +18,7 @@ func (w *Worker) keywordSearch(ctx context.Context, jobId int, videoURL string, 
 
 	// fmt.Printf("trying keyword search with %s, %s\n", videoURL, query)
 
-	tempDir, subFiles, title, err := getSubs(videoURL)
+	tempDir, subFiles, title, err := w.getSubs(ctx, videoURL)
 	if err != nil {
 		return err
 	}

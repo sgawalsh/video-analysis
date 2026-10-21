@@ -16,7 +16,7 @@ type semanticMatch struct {
 
 func (w *Worker) semanticSearch(ctx context.Context, jobId int, videoURL string, query string) error {
 
-	tempDir, subFiles, title, err := getSubs(videoURL)
+	tempDir, subFiles, title, err := w.getSubs(ctx, videoURL)
 	if err != nil {
 		return err
 	}

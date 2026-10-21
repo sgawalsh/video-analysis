@@ -1,10 +1,10 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -28,29 +28,26 @@ type wordIndexTime struct {
 	timeStamp int64
 }
 
-func getSubs(videoURL string) (string, []string, string, error) {
-	tempDir, err := os.MkdirTemp("", "subs-*")
-	if err != nil {
-		return "", nil, "", err
-	}
-
-	// Get video title
-	titleCmd := exec.Command(
-		"yt-dlp",
+func (w *Worker) getSubs(ctx context.Context, videoURL string) (string, []string, string, error) {
+	titleOutput, err := w.runYTDLP(ctx, []string{
 		"--print", "%(title)s",
 		"--skip-download",
 		"--",
 		videoURL,
-	)
-
-	titleOutput, err := titleCmd.Output()
+	}...)
 	if err != nil {
-		log.Printf("yt-dlp title failed: %v", err)
+		log.Printf("yt-dlp failed to get title: %v", err)
 		log.Printf("yt-dlp output: %s", string(titleOutput))
 		return "", nil, "", fmt.Errorf("yt-dlp title read failed: %w", err)
 	}
 
 	title := strings.TrimSpace(string(titleOutput))
+	log.Printf("video title: %s", title)
+
+	tempDir, err := os.MkdirTemp("", "subs-*")
+	if err != nil {
+		return "", nil, "", err
+	}
 
 	// Download subtitles
 	outputTemplate := filepath.Join(
@@ -58,18 +55,15 @@ func getSubs(videoURL string) (string, []string, string, error) {
 		"%(id)s.%(ext)s",
 	)
 
-	subCmd := exec.Command(
-		"yt-dlp",
+	_, err = w.runYTDLP(ctx, []string{
 		"--write-auto-sub",
 		"--skip-download",
-		"--sub-lang", "en",
+		"--sub-lang", "en-orig",
 		"--convert-subs", "vtt",
 		"--output", outputTemplate,
 		"--",
 		videoURL,
-	)
-
-	_, err = subCmd.CombinedOutput()
+	}...)
 	if err != nil {
 		return "", nil, "", fmt.Errorf("yt-dlp failed to download subtitles: %w", err)
 	}

@@ -71,6 +71,7 @@ async function runMigrations(pool, { enableCron = false } = {}) {
     )
   `);
 
+  //Create table for LLM info
   await pool.query(`
     CREATE TABLE IF NOT EXISTS llm_job_info (
       id SERIAL PRIMARY KEY,
@@ -78,6 +79,20 @@ async function runMigrations(pool, { enableCron = false } = {}) {
       input JSONB
     )
   `);
+
+  //Create table for YT-DLP rate-limiting
+  await pool.query(`
+    CREATE TABLE yt_dlp_rate_limit (
+        name TEXT PRIMARY KEY,
+        last_launch TIMESTAMPTZ NOT NULL DEFAULT '1970-01-01 00:00:00+00'::timestamptz,
+        cooldown_until TIMESTAMPTZ NOT NULL DEFAULT '1970-01-01 00:00:00+00'::timestamptz,
+        consecutive_429 INTEGER NOT NULL DEFAULT 0
+    );
+
+    INSERT INTO yt_dlp_rate_limit (name)
+    VALUES ('global');
+  `);
+  
   
   // Create index on status for efficient querying of pending jobs for KEDA
   await pool.query(`
