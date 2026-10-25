@@ -27,7 +27,7 @@ test('user can create a session and see session status', async () => {
         type: 'SEMANTIC_SEARCH',
         errorMessages: [],
         results: [],
-        channelSearchStatus: null,
+        channelSearchInfo: {status: null, lastError: null},
       }),
     });
 
