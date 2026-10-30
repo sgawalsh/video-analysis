@@ -100,7 +100,7 @@ func (w *Worker) topicDetectionLLM(ctx context.Context, jobId int, title string)
 		}
 
 		prompt := fmt.Sprintf(
-			"Write a short, descriptive video chapter title (under 7 words) for the following video transcript segment. Respond with just the chapter title, do not include introductory words or punctuation.\nVideo Title: %s\nTranscript: %s",
+			"Write a short, descriptive video chapter title (under 7 words) for the following video transcript segment. Respond with just the chapter title, do not include introductory words or punctuation, do not repeat the video title.\nVideo Title: %s\nTranscript: %s",
 			title,
 			strings.Join(words, " "),
 		)
