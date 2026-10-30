@@ -144,7 +144,7 @@ function SessionStatus() {
     };
   }, [id]);
 
-  if (!sessionState) return <p>Loading…</p>;
+  if (!sessionState) return <main className="container status-message"><p>Loading…</p></main>;
 
 if (['PENDING', 'RUNNING'].includes(sessionState.channelSearchInfo.status)) {
   return (

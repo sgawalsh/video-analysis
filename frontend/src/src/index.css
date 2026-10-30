@@ -435,14 +435,6 @@
   }
 }
 
-.summary-results-table th:first-child {
-  width: 30%;
-}
-
-.summary-results-table th:last-child {
-  text-align: left;
-}
-
 .summary-cell {
   min-width: 300px;
   vertical-align: top;

@@ -21,7 +21,7 @@ function KeywordSearchResult({ results }) {
               <tr>
                 <th scope="col">Rank</th>
                 <th scope="col">Matches</th>
-                <th scope="col">Thumbnail</th>
+                <th scope="col">Video</th>
                 <th scope="col">Link</th>
               </tr>
             </thead>
