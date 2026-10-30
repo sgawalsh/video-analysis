@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
@@ -33,9 +34,12 @@ func (w *Worker) channelSearch(ctx context.Context, jobId int, channelID string)
 		// "--cookies-from-browser", "firefox",
 		"--print", "id",
 		"--no-warnings",
-		fmt.Sprintf("https://www.youtube.com/%s/videos", channelID),
+		fmt.Sprintf("https://www.youtube.com/@%s/videos", channelID),
 	)
 	if err != nil {
+		if errors.Is(err, ErrChannelUnavailable) {
+			return fmt.Errorf("channel @%q could not be found or is unavailable", channelID)
+		}
 		return err
 	}
 

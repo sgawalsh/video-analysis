@@ -17,7 +17,7 @@ function sessionRoutes({ pool, hub }) {
             mode,
             type,
             videoURL,
-            channelName,
+            channelHandle,
             startDate,
             endDate,
             searchTerm,
@@ -37,7 +37,7 @@ function sessionRoutes({ pool, hub }) {
                 singleVideoFlow(res, pool, type, videoURL, searchTerm);
                 break;
             case 'channel':
-                channelSearchFlow(res, pool, type, channelName, searchTerm, startDate, endDate);
+                channelSearchFlow(res, pool, type, channelHandle, searchTerm, startDate, endDate);
                 break;
             default:
                 return res.status(400).json({error: 'Invalid mode',});
@@ -163,9 +163,9 @@ async function singleVideoFlow(res, pool, type, videoURL, searchTerm) {
     }
 }
 
-async function channelSearchFlow(res, pool, type, channelName, searchTerm, startDate, endDate) {
-    if (!channelName) {
-        return res.status(400).json({error: 'Channel name is required',});
+async function channelSearchFlow(res, pool, type, channelHandle, searchTerm, startDate, endDate) {
+    if (!channelHandle) {
+        return res.status(400).json({error: 'Channel handle is required',});
     }
     if (!startDate || !endDate) {
         return res.status(400).json({error: 'Date fields are required',});
@@ -178,7 +178,7 @@ async function channelSearchFlow(res, pool, type, channelName, searchTerm, start
     try {
         await client.query('BEGIN');
 
-        console.log('going with type', type, 'channelName', channelName, 'searchTerm', searchTerm, 'startDate', startDate, 'endDate', endDate);
+        console.log('going with type', type, 'channelHandle', channelHandle, 'searchTerm', searchTerm, 'startDate', startDate, 'endDate', endDate);
 
         const sessionResult = await client.query(
             `
@@ -205,7 +205,7 @@ async function channelSearchFlow(res, pool, type, channelName, searchTerm, start
             )
             VALUES ($1, $2, $3 ,$4, $5, $6)
             `,
-            [id, public_id, "CHANNEL_SEARCH", channelName, startDate, endDate]
+            [id, public_id, "CHANNEL_SEARCH", channelHandle, startDate, endDate]
         );
 
         await client.query('COMMIT');

@@ -5,6 +5,7 @@ import (
 	"context"
 	"database/sql"
 	"database/sql/driver"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -12,6 +13,8 @@ import (
 	"strings"
 	"time"
 )
+
+var ErrChannelUnavailable = errors.New("YouTube channel not found or unavailable")
 
 var ytdlpLimiter = func() time.Duration {
 	limiter, err := time.ParseDuration(os.Getenv("worker_ytdlp_limiter"))
@@ -86,8 +89,11 @@ func (w *Worker) runYTDLP(ctx context.Context, args ...string) ([]byte, error) {
 
 	if err := cmd.Wait(); err != nil {
 		duration := time.Since(start)
-		is429 := strings.Contains(stderr.String(), "HTTP Error 429")
-		log.Printf("yt-dlp failed: duration=%s rate_limited=%t err=%v stderr=%s", duration, is429, err, stderr.String())
+		stderrStr := stderr.String()
+		is429 := strings.Contains(stderrStr, "HTTP Error 429")
+		is404 := strings.Contains(stderrStr, "HTTP Error 404: Not Found")
+
+		log.Printf("yt-dlp failed: duration=%s rate_limited=%t err=%v stderr=%s", duration, is429, err, stderrStr)
 
 		if is429 {
 			log.Printf("yt-dlp rate limited, recording outcome")
@@ -97,6 +103,9 @@ func (w *Worker) runYTDLP(ctx context.Context, args ...string) ([]byte, error) {
 				log.Printf("record yt-dlp 429: %v", recordErr)
 			}
 			cancel()
+		}
+		if is404 {
+			return stdout.Bytes(), fmt.Errorf("%w: %s", ErrChannelUnavailable, stderrStr)
 		}
 
 		return stdout.Bytes(), fmt.Errorf("yt-dlp failed: %w: %s", err, stderr.String())

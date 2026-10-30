@@ -44,6 +44,28 @@
   margin: 0;
 }
 
+.handle-input {
+  display: flex;
+}
+
+.handle-input span {
+  white-space: nowrap;
+  padding: var(--pico-form-element-spacing-vertical)
+           0.5rem;
+  line-height: var(--pico-form-element-line-height);
+  background-color: var(--pico-form-element-background-color);
+  border: 1px solid var(--pico-form-element-border-color);
+  border-right: none;
+  border-radius: var(--pico-border-radius) 0 0 var(--pico-border-radius);
+}
+
+.handle-input input {
+  flex: 1;
+  min-width: 0;
+  margin-bottom: 0;
+  border-radius: 0 var(--pico-border-radius) var(--pico-border-radius) 0;
+}
+
 .date-fields {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

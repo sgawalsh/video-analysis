@@ -21,7 +21,7 @@ function JobForm() {
     jobType: 'SEMANTIC_SEARCH',
     videoUrl: '',
     searchTerm: '',
-    channelName: '',
+    channelHandle: '',
     startDate: '',
     endDate: '',
   });
@@ -30,7 +30,7 @@ function JobForm() {
   const YOUTUBE_URL_REGEX = /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)[A-Za-z0-9_-]+/;
 
   // Generic Change Handler for text, select, and radio inputs
-  const handleChange = (e) => {
+  const updateFormData = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
@@ -43,7 +43,7 @@ function JobForm() {
     setError(null);
     setLoading(true);
 
-    const { mode, jobType, videoUrl, searchTerm, channelName, startDate, endDate } = formData;
+    const { mode, jobType, videoUrl, searchTerm, channelHandle, startDate, endDate } = formData;
 
     try {
       let requestBody = { type: jobType, mode: mode };
@@ -56,8 +56,8 @@ function JobForm() {
         }
         requestBody.videoURL = videoUrl;
       } else {
-        if (!channelName){
-          setError('Channel name is required');
+        if (!channelHandle){
+          setError('Channel handle is required');
           setLoading(false);
           return;
         }
@@ -75,7 +75,7 @@ function JobForm() {
           return;
         }
 
-        requestBody.channelName = channelName;
+        requestBody.channelHandle = channelHandle;
         requestBody.startDate = startDate;
         requestBody.endDate = endDate;
       }
@@ -121,7 +121,7 @@ function JobForm() {
                 name="mode"
                 value="single"
                 checked={formData.mode === "single"}
-                onChange={handleChange}
+                onChange={updateFormData}
               />
               Single Video
             </label>
@@ -132,7 +132,7 @@ function JobForm() {
                 name="mode"
                 value="channel"
                 checked={formData.mode === "channel"}
-                onChange={handleChange}
+                onChange={updateFormData}
               />
               Channel Search
             </label>
@@ -143,7 +143,7 @@ function JobForm() {
             id="jobType"
             name="jobType"
             value={formData.jobType}
-            onChange={handleChange}
+            onChange={updateFormData}
           >
             <option value="SEMANTIC_SEARCH">Semantic Search</option>
             <option value="KEYWORD_SEARCH">Keyword Search</option>
@@ -159,7 +159,7 @@ function JobForm() {
                 id="videoUrl"
                 name="videoUrl"
                 value={formData.videoUrl}
-                onChange={handleChange}
+                onChange={updateFormData}
                 placeholder="Video URL"
                 required
               />
@@ -169,15 +169,16 @@ function JobForm() {
           {/* CHANNEL INPUTS */}
           {formData.mode === "channel" && (
             <>
-              <label htmlFor="channelName">Channel Name or Handle</label>
-              <input
-                id="channelName"
-                name="channelName"
-                value={formData.channelName}
-                onChange={handleChange}
-                placeholder="Channel Name"
-                required
-              />
+              <div className="handle-input">
+                <span>@</span>
+                <input 
+                  type="text"
+                  name="channelHandle"
+                  placeholder="ChannelHandle"
+                  value={formData.channelHandle}
+                  onChange={updateFormData}
+                />
+              </div>
 
               <div className="date-fields">
                 <div>
@@ -187,7 +188,7 @@ function JobForm() {
                     type="date"
                     name="startDate"
                     value={formData.startDate}
-                    onChange={handleChange}
+                    onChange={updateFormData}
                     max={formData.endDate || maxAvailableDate}
                     required
                   />
@@ -200,7 +201,7 @@ function JobForm() {
                     type="date"
                     name="endDate"
                     value={formData.endDate}
-                    onChange={handleChange}
+                    onChange={updateFormData}
                     min={formData.startDate}
                     max={maxAvailableDate}// prevent future dates
                     required
@@ -218,7 +219,7 @@ function JobForm() {
                 id="searchTerm"
                 name="searchTerm"
                 value={formData.searchTerm}
-                onChange={handleChange}
+                onChange={updateFormData}
                 placeholder="Search Term"
                 required
               />
