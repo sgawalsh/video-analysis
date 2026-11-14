@@ -16,14 +16,14 @@ type keywordMatch struct {
 
 func (w *Worker) keywordSearch(ctx context.Context, jobId int, videoURL string, query string) error {
 
-	// fmt.Printf("trying keyword search with %s, %s\n", videoURL, query)
+	// log.Printf("trying keyword search with %s, %s\n", videoURL, query)
 
 	tempDir, subFiles, title, err := w.getSubs(ctx, videoURL)
 	if err != nil {
 		return err
 	}
 
-	// fmt.Printf("got the subs!\n")
+	// log.Printf("got the subs!\n")
 
 	defer os.RemoveAll(tempDir)
 

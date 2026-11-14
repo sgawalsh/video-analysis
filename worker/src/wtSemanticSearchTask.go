@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"strings"
 )
@@ -38,7 +39,7 @@ func (w *Worker) semanticSearch(ctx context.Context, jobId int, videoURL string,
 		return err
 	}
 
-	fmt.Printf("semantic matches: %v\n", semanticMatches)
+	log.Printf("semantic matches: %v\n", semanticMatches)
 
 	resultJSON, err := json.Marshal(semanticMatches)
 	if err != nil {

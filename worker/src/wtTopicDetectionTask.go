@@ -57,9 +57,9 @@ func (w *Worker) topicDetectionEmbed(ctx context.Context, jobId int, videoURL st
 
 	chapters := make([]ChapterText, 0, len(chapterTexts))
 
-	// fmt.Printf("len(myChunks)=%d\n", len(myChunks))
-	// fmt.Printf("chapterBoundaries=%v\n", chapterBoundaries)
-	// fmt.Printf("len(chapters)=%d\n", len(chapters))
+	// log.Printf("len(myChunks)=%d\n", len(myChunks))
+	// log.Printf("chapterBoundaries=%v\n", chapterBoundaries)
+	// log.Printf("len(chapters)=%d\n", len(chapters))
 
 	for i := range chapterTexts {
 		chapters = append(chapters, ChapterText{
@@ -68,15 +68,15 @@ func (w *Worker) topicDetectionEmbed(ctx context.Context, jobId int, videoURL st
 		})
 	}
 
-	// fmt.Printf("boundaries: %v\n", chapterBoundaries)
-	// fmt.Printf("chunk 1: %v\n", chapterTexts[0])
+	// log.Printf("boundaries: %v\n", chapterBoundaries)
+	// log.Printf("chunk 1: %v\n", chapterTexts[0])
 
 	resultJSON, err := json.Marshal(chapters)
 	if err != nil {
 		return fmt.Errorf("Failed to marshal topic detection result: %w", err)
 	}
 
-	// fmt.Printf("writing: %v\n", string(resultJSON))
+	// log.Printf("writing: %v\n", string(resultJSON))
 
 	return w.createLlmJob(ctx, jobId, jobTypeTopicDetectionLLM, title, resultJSON)
 }
