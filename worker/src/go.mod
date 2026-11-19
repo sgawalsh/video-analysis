@@ -4,7 +4,7 @@ go 1.27.0
 
 require (
 	github.com/asticode/go-astisub v0.45.0
-	github.com/jackc/pgx/v5 v5.12.0
+	github.com/jackc/pgx/v5 v5.13.0
 	github.com/lib/pq v1.12.3
 	github.com/prometheus/client_golang v1.25.0
 	github.com/stretchr/testify v1.12.1
