@@ -1,0 +1,24 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: llm-model-provision
+  namespace: app
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: llm-model-download
+          image: sgawalsh/video-analysis-llm-model-download:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: OLLAMA_MODEL
+              value: llama3.2:1b
+          volumeMounts:
+            - name: llm-model-data
+              mountPath: /root/.ollama
+      volumes:
+        - name: llm-model-data
+          persistentVolumeClaim:
+            claimName: llm-model-data

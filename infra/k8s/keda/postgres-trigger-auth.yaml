@@ -7,10 +7,10 @@ spec:
   secretTargetRef:
     - parameter: userName
       name: postgres-secret
-      key: POSTGRES_USER
+      key: KEDA_SCALER_USER
     - parameter: password
       name: postgres-secret
-      key: POSTGRES_PASSWORD
+      key: KEDA_SCALER_PASSWORD
     - parameter: host
       name: postgres-config
       key: POSTGRES_HOST

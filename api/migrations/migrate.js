@@ -254,6 +254,40 @@ async function runMigrations(pool, { enableCron = false } = {}) {
     $$;
   `);
 
+  const user = process.env.KEDA_SCALER_USER;
+  const password = process.env.KEDA_SCALER_PASSWORD;
+
+  if (!user || !password) {
+    throw new Error('Missing KEDA_SCALER_USER or KEDA_SCALER_PASSWORD');
+  }
+
+  // 1. Safely escape the username for identifier interpolation
+  // (Replaces any double-quotes with two double-quotes and wraps in quotes)
+  const safeUser = `"${user.replace(/"/g, '""')}"`;
+
+  // 2. Create or update the user using a DO block with safely escaped literals
+  // (Replaces single-quotes with two single-quotes for string literals)
+  const safeUserLiteral = `'${user.replace(/'/g, "''")}'`;
+  const safePassLiteral = `'${password.replace(/'/g, "''")}'`;
+
+  await pool.query(`
+    DO $$
+    BEGIN
+      IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = ${safeUserLiteral}) THEN
+        EXECUTE format('ALTER USER %I WITH PASSWORD %L', ${safeUserLiteral}, ${safePassLiteral});
+      ELSE
+        EXECUTE format('CREATE USER %I WITH PASSWORD %L', ${safeUserLiteral}, ${safePassLiteral});
+      END IF;
+    END
+    $$;
+  `);
+
+  // 3. Run each GRANT as a separate query
+  await pool.query(`GRANT CONNECT ON DATABASE jobs TO ${safeUser};`);
+  await pool.query(`GRANT USAGE ON SCHEMA public TO ${safeUser};`);
+  await pool.query(`GRANT SELECT ON TABLE jobs TO ${safeUser};`);
+
+
 
   if (enableCron) {
     // Ensure pg_cron extension exists
@@ -268,8 +302,7 @@ async function runMigrations(pool, { enableCron = false } = {}) {
         AND NOT EXISTS (
             SELECT 1
             FROM jobs j
-            WHERE j.session_id = s.id
-              AND j.status IN ('PENDING', 'RUNNING')
+            WHERE j.session_id = s.id AND j.status IN ('PENDING', 'RUNNING')
         );
     `;
 

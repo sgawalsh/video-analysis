@@ -1,4 +1,5 @@
-$timeout = 120
+$shortTimeout = 120
+$longTimeout = 3600
 $modelName = "llama3.2:1b"
 
 Write-Host "Bootstrapping Kubernetes Cluster..."
@@ -25,16 +26,24 @@ helm upgrade --install monitoring prometheus-community/kube-prometheus-stack `
   -f .\monitoring\values.yaml
 
 Write-Host "Waiting for monitoring pods..."
-kubectl wait --for=condition=Ready pods --all -n monitoring --timeout=${timeout}s
+kubectl wait --for=condition=Ready pods --all -n monitoring --timeout=${shortTimeout}s
 
 ############################################
 # 3. Deploy App
 ############################################
 
+
+Write-Host "Deploying Jobs..."
+
+Get-ChildItem -Path .\app\ -Recurse -Filter "*job.yaml" | 
+    ForEach-Object { kubectl apply -f $_.FullName }
+
+kubectl wait --for=condition=Complete jobs --all -n app --timeout=${longTimeout}s
+
 Write-Host "Deploying application..."
 kubectl apply -R -f .\app\
 
-kubectl wait --for=condition=Ready pods --all -n app --timeout=${timeout}s
+kubectl wait --for=condition=Ready pods --all -n app --timeout=${shortTimeout}s
 
 
 ############################################
@@ -48,7 +57,7 @@ kubectl wait `
     pod `
     -l app=llm-model-worker `
     -n app `
-    --timeout=${timeout}s
+    --timeout=${shortTimeout}s
 
 $llmPod = kubectl get pod `
     -l app=llm-model-worker `
@@ -59,15 +68,11 @@ Write-Host "Checking for $modelName..."
 
 $model = kubectl exec -n app $llmPod -c llm-model -- ollama list
 
-if ($model -notmatch $modelName) {
-    Write-Host "Model not found. Pulling $modelName..."
+$modelExists = $model | Select-String -Pattern "^\s*$([regex]::Escape($modelName))\s"
 
-    kubectl exec -n app $llmPod -c llm-model -- `
-        ollama pull $modelName
-
-    if ($LASTEXITCODE -ne 0) {
-        throw "Failed to pull $modelName"
-    }
+if (-not $modelExists) {
+    Write-Host "Model $modelName not found. Found $model instead"
+    exit 1
 }
 else {
     Write-Host "$modelName already exists in the persistent volume."
@@ -86,7 +91,7 @@ helm upgrade --install keda kedacore/keda `
   --create-namespace
 
 Write-Host "Waiting for KEDA operator..."
-kubectl wait --for=condition=Available deployment/keda-operator -n keda --timeout=${timeout}s
+kubectl wait --for=condition=Available deployment/keda-operator -n keda --timeout=${shortTimeout}s
 
 Write-Host "Deploying KEDA ScaledObject..."
 kubectl apply -R -f .\keda\
@@ -167,7 +172,7 @@ do {
     Start-Sleep -Seconds $interval
     $elapsed += $interval
 
-} while ($elapsed -lt $timeout)
+} while ($elapsed -lt $shortTimeout)
 
 if (-not $success) {
     Write-Error "Failed to apply ingress resources after waiting."

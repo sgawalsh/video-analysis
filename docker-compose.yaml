@@ -61,21 +61,35 @@ services:
       role: llm_worker
       llm_concurrency: "${llm_concurrency:-1}"
 
+  llm-model-download:
+    build:
+      context: ./llm_model
+      target: download
+    environment:
+      OLLAMA_MODEL: llama3.2:1b
+    volumes:
+      - llm-model-data:/root/.ollama
+
+  llm-model:
+    build:
+      context: ./llm_model
+      target: serve
+    depends_on:
+      llm-model-download:
+        condition: service_completed_successfully
+    expose:
+      - "11434:11434"
+    volumes:
+      - llm-model-data:/root/.ollama
+    cpus: "4.0" # Restrict CPU resources so website stays responsive
+    mem_limit: 4g
+
   encoder-model:
     build: ./encoder_model
     expose:
       - "8000"
     volumes:
-      - encoder_model_data:/root/.cache/huggingface
-
-  llm-model:
-    build: ./llm_model
-    expose:
-      - "11434:11434"
-    volumes:
-      - llm_model_data:/root/.ollama
-    cpus: "4.0" # Restrict CPU resources so website stays responsive
-    mem_limit: 4g
+      - encoder-model-data:/root/.cache/huggingface
 
   nginx:
     build:
@@ -116,5 +130,5 @@ services:
 volumes:
   pgdata:
   grafana-data:
-  encoder_model_data:
-  llm_model_data:
+  encoder-model-data:
+  llm-model-data:
