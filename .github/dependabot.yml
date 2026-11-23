@@ -88,3 +88,17 @@ updates:
     directory: "/infra/nginx"
     schedule:
       interval: "weekly"
+
+  # Encoder Model - docker
+
+  - package-ecosystem: "docker"
+    directory: "/encoder_model"
+    schedule:
+      interval: "weekly"
+  
+  # Ollama Model - docker
+
+  - package-ecosystem: "docker"
+    directory: "/llm_model"
+    schedule:
+      interval: "weekly"
