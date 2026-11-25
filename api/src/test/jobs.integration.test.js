@@ -21,7 +21,7 @@ let app;
 
 beforeAll(async () => {
   // Start the container
-  container = await new PostgreSqlContainer('postgres:18-bookworm')
+  container = await new PostgreSqlContainer('postgres:19-bookworm')
     .withDatabase(process.env.POSTGRES_DB)
     .withUsername(process.env.POSTGRES_USER)
     .withPassword(process.env.POSTGRES_PASSWORD)
