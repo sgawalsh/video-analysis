@@ -22,9 +22,9 @@ let app;
 beforeAll(async () => {
   // Start the container
   container = await new PostgreSqlContainer('postgres:18-bookworm')
-    .withDatabase('testdb')
-    .withUsername('testuser')
-    .withPassword('testpass')
+    .withDatabase(process.env.POSTGRES_DB)
+    .withUsername(process.env.POSTGRES_USER)
+    .withPassword(process.env.POSTGRES_PASSWORD)
     .start();
 
   // Connect the pool

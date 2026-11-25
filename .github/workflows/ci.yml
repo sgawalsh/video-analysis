@@ -8,6 +8,25 @@ jobs:
   test-api-frontend:
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+          image: postgres:19-bookworm
+          env:
+            POSTGRES_USER: ${{ vars.POSTGRES_USER }}
+            POSTGRES_PASSWORD: ${{ vars.POSTGRES_PASSWORD }}
+            POSTGRES_DB: ${{ vars.POSTGRES_DB }}
+          ports:
+            - 5432:5432
+
+    env:
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${{ vars.POSTGRES_USER }}
+      POSTGRES_PASSWORD: ${{ vars.POSTGRES_PASSWORD }}
+      POSTGRES_DB: ${{ vars.POSTGRES_DB }}
+      KEDA_SCALER_USER: ${{ vars.KEDA_SCALER_USER }}
+      KEDA_SCALER_PASSWORD: ${{ vars.KEDA_SCALER_PASSWORD }}
+
     steps:
       - uses: actions/checkout@v7
 
@@ -36,7 +55,7 @@ jobs:
 
     services:
       postgres:
-        image: postgres:18-bookworm
+        image: postgres:19-bookworm
         env:
           POSTGRES_USER: ${{ vars.POSTGRES_USER }}
           POSTGRES_PASSWORD: ${{ vars.POSTGRES_PASSWORD }}
@@ -50,6 +69,8 @@ jobs:
       POSTGRES_USER: ${{ vars.POSTGRES_USER }}
       POSTGRES_PASSWORD: ${{ vars.POSTGRES_PASSWORD }}
       POSTGRES_DB: ${{ vars.POSTGRES_DB }}
+      KEDA_SCALER_USER: ${{ vars.KEDA_SCALER_USER }}
+      KEDA_SCALER_PASSWORD: ${{ vars.KEDA_SCALER_PASSWORD }}
       worker_max_job_retries: ${{ vars.WORKER_MAX_JOB_RETRIES }}
       worker_running_timeout: ${{ vars.WORKER_RUNNING_TIMEOUT }}
 

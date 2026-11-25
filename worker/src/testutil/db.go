@@ -2,6 +2,9 @@ package testutil
 
 import (
 	"database/sql"
+	"fmt"
+	"net/url"
+	"os"
 	"testing"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
@@ -10,7 +13,20 @@ import (
 func OpenTestDB(t *testing.T) *sql.DB {
 	t.Helper()
 
-	dsn := "postgres://test:test@localhost:5432/test?sslmode=disable"
+	host := os.Getenv("POSTGRES_HOST")
+	port := os.Getenv("POSTGRES_PORT")
+	user := os.Getenv("POSTGRES_USER")
+	password := os.Getenv("POSTGRES_PASSWORD")
+	database := os.Getenv("POSTGRES_DB")
+
+	dsn := fmt.Sprintf(
+		"postgres://%s:%s@%s:%s/%s?sslmode=disable",
+		url.QueryEscape(user),
+		url.QueryEscape(password),
+		host,
+		port,
+		database,
+	)
 	db, err := sql.Open("pgx", dsn)
 	if err != nil {
 		t.Fatalf("failed to open db: %v", err)
